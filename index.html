@@ -463,6 +463,7 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
 // ======= FIREBASE CONFIG =======
 // 👉 החלף את הערכים הבאים בערכי הפרויקט שלך מ- https://console.firebase.google.com
@@ -479,10 +480,18 @@ let firebaseReady = false;
 let recaptchaVerifier = null;
 let phoneConfirmResult = null;
 
+let db = null;
+
 try {
   if(FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseReady = true;
+    // Initialize Firestore with offline persistence
+    db = firebase.firestore();
+    db.enablePersistence({synchronizeTabs:true}).catch(err=>{
+      if(err.code==='failed-precondition')console.warn('Firestore persistence: multiple tabs open');
+      else if(err.code==='unimplemented')console.warn('Firestore persistence: browser not supported');
+    });
   }
 } catch(e) { console.warn('Firebase init failed:', e); }
 </script>
@@ -871,8 +880,80 @@ let simTimer=null,simRemaining=0,isSimMode=false,simCat='',simAnswers=[];
 const getUsers=()=>{try{return JSON.parse(localStorage.getItem('pApp_u'))||{}}catch{return{}}};
 const saveUsers=u=>localStorage.setItem('pApp_u',JSON.stringify(u));
 const getUser=n=>getUsers()[n]||null;
-const saveUser=u=>{const us=getUsers();us[u.name]=u;saveUsers(us)};
+const saveUser=u=>{const us=getUsers();us[u.name]=u;saveUsers(us);syncUserToFirestore(u)};
 const newUser=n=>({name:n,points:0,completed:[],totalTime:0,lastActive:Date.now(),created:Date.now(),quizResults:{},classification:null});
+
+// ===== FIRESTORE SYNC =====
+let _syncTimer=null;
+let _firestoreUsersCache=null;
+let _firestoreCacheTime=0;
+const FIRESTORE_CACHE_TTL=30000; // 30 seconds
+
+function syncUserToFirestore(u){
+  if(!db||!u||!u.name)return;
+  // Debounce: wait 2 seconds of inactivity before syncing
+  if(_syncTimer)clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(()=>{
+    const doc={
+      name:u.name,
+      points:u.points||0,
+      completed:u.completed||[],
+      totalTime:u.totalTime||0,
+      lastActive:Date.now(),
+      created:u.created||Date.now(),
+      quizResults:u.quizResults||{},
+      classification:u.classification||null,
+      firebaseUid:firebase.auth().currentUser?.uid||null
+    };
+    db.collection('users').doc(u.name).set(doc,{merge:true}).then(()=>{
+      console.log('Firestore synced:',u.name);
+      _firestoreUsersCache=null; // invalidate cache
+    }).catch(e=>console.warn('Firestore sync error:',e));
+  },2000);
+}
+
+function fetchFirestoreLeaderboard(){
+  return new Promise((resolve)=>{
+    if(!db){resolve([]);return}
+    // Use cache if fresh
+    if(_firestoreUsersCache&&(Date.now()-_firestoreCacheTime<FIRESTORE_CACHE_TTL)){
+      resolve(_firestoreUsersCache);return;
+    }
+    db.collection('users').orderBy('points','desc').limit(100).get().then(snap=>{
+      const users=[];
+      snap.forEach(doc=>users.push(doc.data()));
+      _firestoreUsersCache=users;
+      _firestoreCacheTime=Date.now();
+      resolve(users);
+    }).catch(e=>{
+      console.warn('Firestore leaderboard fetch error:',e);
+      resolve([]);
+    });
+  });
+}
+
+function mergeFirestoreUser(firestoreData,localUser){
+  // Merge strategy: keep highest points, union completed, merge quizResults (newest wins)
+  if(!firestoreData)return localUser;
+  if(!localUser)return firestoreData;
+  const merged={...localUser};
+  if(firestoreData.points>merged.points)merged.points=firestoreData.points;
+  // Union completed arrays
+  const fcSet=new Set([...(merged.completed||[]),...(firestoreData.completed||[])]);
+  merged.completed=[...fcSet];
+  // Merge quizResults: keep whichever has newer lastDate per key
+  if(firestoreData.quizResults){
+    if(!merged.quizResults)merged.quizResults={};
+    for(const[key,val] of Object.entries(firestoreData.quizResults)){
+      if(!merged.quizResults[key]||(val.lastDate||0)>(merged.quizResults[key].lastDate||0)){
+        merged.quizResults[key]=val;
+      }
+    }
+  }
+  if(firestoreData.totalTime>merged.totalTime)merged.totalTime=firestoreData.totalTime;
+  if(firestoreData.classification&&!merged.classification)merged.classification=firestoreData.classification;
+  return merged;
+}
 
 // ===== UTILITY =====
 const getRank=p=>{let r=RANKS[0];for(const x of RANKS)if(p>=x.min)r=x;return r};
@@ -945,12 +1026,39 @@ function logout(){
 // ===== FIREBASE AUTH =====
 function firebaseLoginUser(name){
   let u=getUser(name);
-  if(!u){u=newUser(name);saveUser(u)}
-  user=u;if(!user.quizResults)user.quizResults={};
-  user.lastActive=Date.now();saveUser(user);
-  localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
-  document.getElementById('report-fab').style.display='flex';
-  toggleAdminFab();
+  if(!u){u=newUser(name)}
+  // Try to pull from Firestore and merge
+  if(db){
+    db.collection('users').doc(name).get().then(doc=>{
+      if(doc.exists){
+        const merged=mergeFirestoreUser(doc.data(),u);
+        u=merged;
+      }
+      u.name=name;
+      u.firebaseUid=firebase.auth().currentUser?.uid||null;
+      if(!u.quizResults)u.quizResults={};
+      u.lastActive=Date.now();
+      user=u;saveUser(user);
+      localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
+      document.getElementById('report-fab').style.display='flex';
+      toggleAdminFab();
+    }).catch(()=>{
+      // Firestore unavailable — proceed with local only
+      if(!u.quizResults)u.quizResults={};
+      u.lastActive=Date.now();
+      user=u;saveUser(user);
+      localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
+      document.getElementById('report-fab').style.display='flex';
+      toggleAdminFab();
+    });
+  } else {
+    if(!u.quizResults)u.quizResults={};
+    u.lastActive=Date.now();
+    user=u;saveUser(user);
+    localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
+    document.getElementById('report-fab').style.display='flex';
+    toggleAdminFab();
+  }
 }
 
 function googleLogin(){
@@ -1594,41 +1702,61 @@ function renderLB(){
 }
 
 function renderLBList(){
-  let allUsers=Object.values(getUsers());
-  // Apply filters
-  if(lbFilter!=='all'){
-    allUsers=allUsers.filter(u=>u.classification&&u.classification.type===lbFilter);
-    if(lbFilter==='officer'&&lbSubFilter){
-      allUsers=allUsers.filter(u=>u.classification&&u.classification.district===lbSubFilter);
+  const list=document.getElementById('lb-list');
+  list.innerHTML='<div class="no-data-msg" style="opacity:.6">טוען טבלת דירוג...</div>';
+  // Merge local + Firestore users
+  fetchFirestoreLeaderboard().then(firestoreUsers=>{
+    const localUsers=Object.values(getUsers());
+    // Build map by name, prefer highest points
+    const merged={};
+    localUsers.forEach(u=>{merged[u.name]=u});
+    firestoreUsers.forEach(fu=>{
+      if(!fu.name)return;
+      if(!merged[fu.name]){merged[fu.name]=fu}
+      else{
+        // Keep higher points, union completed
+        if(fu.points>merged[fu.name].points)merged[fu.name].points=fu.points;
+        const fc=new Set([...(merged[fu.name].completed||[]),...(fu.completed||[])]);
+        merged[fu.name].completed=[...fc];
+        if(fu.classification&&!merged[fu.name].classification)merged[fu.name].classification=fu.classification;
+      }
+    });
+    let allUsers=Object.values(merged);
+    // Apply filters
+    if(lbFilter!=='all'){
+      allUsers=allUsers.filter(u=>u.classification&&u.classification.type===lbFilter);
+      if(lbFilter==='officer'&&lbSubFilter){
+        allUsers=allUsers.filter(u=>u.classification&&u.classification.district===lbSubFilter);
+      }
+      if(lbFilter==='trainee'&&lbSubFilter){
+        const[key,val]=lbSubFilter.split(':');
+        if(key==='company')allUsers=allUsers.filter(u=>u.classification&&u.classification.company===val);
+        if(key==='cohort')allUsers=allUsers.filter(u=>u.classification&&u.classification.cohort===val);
+      }
     }
-    if(lbFilter==='trainee'&&lbSubFilter){
-      const[key,val]=lbSubFilter.split(':');
-      if(key==='company')allUsers=allUsers.filter(u=>u.classification&&u.classification.company===val);
-      if(key==='cohort')allUsers=allUsers.filter(u=>u.classification&&u.classification.cohort===val);
-    }
-  }
-  const sorted=allUsers.sort((a,b)=>b.points-a.points);
-  const list=document.getElementById('lb-list');list.innerHTML='';
-  if(!sorted.length){list.innerHTML='<div class="no-data-msg">אין משתמשים בקטגוריה זו</div>';return}
-  const medals=['🥇','🥈','🥉'],rc=['gold','silver','bronze'];
-  sorted.forEach((u,i)=>{
-    const r=getRank(u.points),me=user&&u.name===user.name;
-    const cls=u.classification;
-    let tag='';
-    if(cls){
-      const t=USER_TYPES.find(x=>x.id===cls.type);
-      let detail=t?t.icon+' ':'';
-      if(cls.type==='officer'&&cls.district)detail+=cls.district;
-      else if(cls.type==='trainee'){detail+=[cls.company,cls.cohort].filter(Boolean).join(' | ')}
-      else if(t)detail+=t.label;
-      tag=`<div class="lb-classify-tag">${detail}</div>`;
-    }
-    const row=document.createElement('div');row.className='lb-row glass'+(me?' me':'')+(i<3?' top3':'');
-    row.innerHTML=`<div class="lb-rank ${i<3?rc[i]:''}">${i<3?medals[i]:i+1}</div>
-      <div class="lb-avatar">${u.name[0]}</div>
-      <div class="lb-info"><div class="lb-name">${u.name}${me?' ★':''}</div><div class="lb-ranktitle">${r.i} ${r.n}</div>${tag}</div>
-      <div class="lb-pts">${u.points}</div>`;
-    list.appendChild(row);
+    const sorted=allUsers.sort((a,b)=>(b.points||0)-(a.points||0));
+    list.innerHTML='';
+    if(!sorted.length){list.innerHTML='<div class="no-data-msg">אין משתמשים בקטגוריה זו</div>';return}
+    const medals=['🥇','🥈','🥉'],rc=['gold','silver','bronze'];
+    sorted.forEach((u,i)=>{
+      const r=getRank(u.points||0),me=user&&u.name===user.name;
+      const cls=u.classification;
+      let tag='';
+      if(cls){
+        const t=USER_TYPES.find(x=>x.id===cls.type);
+        let detail=t?t.icon+' ':'';
+        if(cls.type==='officer'&&cls.district)detail+=cls.district;
+        else if(cls.type==='trainee'){detail+=[cls.company,cls.cohort].filter(Boolean).join(' | ')}
+        else if(t)detail+=t.label;
+        tag=`<div class="lb-classify-tag">${detail}</div>`;
+      }
+      const row=document.createElement('div');row.className='lb-row glass'+(me?' me':'')+(i<3?' top3':'');
+      row.innerHTML=`<div class="lb-rank ${i<3?rc[i]:''}">${i<3?medals[i]:i+1}</div>
+        <div class="lb-avatar">${u.name[0]}</div>
+        <div class="lb-info"><div class="lb-name">${u.name}${me?' ★':''}</div><div class="lb-ranktitle">${r.i} ${r.n}</div>${tag}</div>
+        <div class="lb-pts">${u.points||0}</div>`;
+      list.appendChild(row);
+    });
   });
 }
 
