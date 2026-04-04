@@ -957,15 +957,21 @@ function googleLogin(){
   if(!firebaseReady){toast('Firebase לא מוגדר. הגדר את FIREBASE_CONFIG');return}
   const provider=new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({prompt:'select_account'});
-  firebase.auth().signInWithPopup(provider).then(result=>{
-    const name=result.user.displayName||result.user.email?.split('@')[0]||'User';
-    firebaseLoginUser(name);
-    toast('ברוך הבא, '+name+'!');
-  }).catch(err=>{
-    console.error('Google login error:',err);
-    if(err.code==='auth/popup-closed-by-user')return;
-    toast('שגיאה בהתחברות: '+err.message);
-  });
+  // Use redirect on mobile (popup fails on iOS/Android browsers)
+  const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if(isMobile){
+    firebase.auth().signInWithRedirect(provider);
+  } else {
+    firebase.auth().signInWithPopup(provider).then(result=>{
+      const name=result.user.displayName||result.user.email?.split('@')[0]||'User';
+      firebaseLoginUser(name);
+      toast('ברוך הבא, '+name+'!');
+    }).catch(err=>{
+      console.error('Google login error:',err);
+      if(err.code==='auth/popup-closed-by-user')return;
+      toast('שגיאה בהתחברות: '+err.message);
+    });
+  }
 }
 
 function showPhoneLogin(){
@@ -990,8 +996,16 @@ function sendPhoneCode(){
   let phone=document.getElementById('phone-input').value.trim();
   if(!phone){toast('הזן מספר טלפון');return}
   // Format Israeli phone
+  phone=phone.replace(/[-\s]/g,'');
   if(phone.startsWith('05'))phone='+972'+phone.substring(1);
+  else if(phone.startsWith('5'))phone='+972'+phone;
   if(!phone.startsWith('+'))phone='+972'+phone;
+  // Always create fresh reCAPTCHA
+  if(recaptchaVerifier){try{recaptchaVerifier.clear()}catch(e){}}
+  document.getElementById('recaptcha-container').innerHTML='';
+  try{
+    recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
+  }catch(e){console.warn('reCAPTCHA init:',e);toast('שגיאה באימות');return}
   document.getElementById('send-code-btn').textContent='שולח...';
   document.getElementById('send-code-btn').disabled=true;
   firebase.auth().signInWithPhoneNumber(phone,recaptchaVerifier).then(result=>{
@@ -1005,7 +1019,6 @@ function sendPhoneCode(){
     document.getElementById('send-code-btn').textContent='שלח קוד';
     document.getElementById('send-code-btn').disabled=false;
     toast('שגיאה: '+err.message);
-    // Reset reCAPTCHA
     if(recaptchaVerifier){try{recaptchaVerifier.clear()}catch(e){}}
     recaptchaVerifier=null;
   });
@@ -2250,9 +2263,26 @@ function init(){
   document.getElementById('admin-login-btn').onclick=loginAdmin;
   document.getElementById('admin-reports-btn').onclick=showAdminReports;
   document.getElementById('admin-lb-config-btn').onclick=showAdminLBConfig;
-  // Auto-login
-  const last=localStorage.getItem('pApp_last');
-  if(last&&getUser(last)){login(last);document.getElementById('report-fab').style.display='flex';toggleAdminFab()}
+  // Auto-login: check Firebase redirect result first (mobile Google login), then localStorage
+  if(firebaseReady){
+    firebase.auth().getRedirectResult().then(result=>{
+      if(result && result.user){
+        const name=result.user.displayName||result.user.email?.split('@')[0]||'User';
+        firebaseLoginUser(name);
+        toast('ברוך הבא, '+name+'!');
+      } else {
+        const last=localStorage.getItem('pApp_last');
+        if(last&&getUser(last)){login(last);document.getElementById('report-fab').style.display='flex';toggleAdminFab()}
+      }
+    }).catch(err=>{
+      console.warn('Redirect result:',err);
+      const last=localStorage.getItem('pApp_last');
+      if(last&&getUser(last)){login(last);document.getElementById('report-fab').style.display='flex';toggleAdminFab()}
+    });
+  } else {
+    const last=localStorage.getItem('pApp_last');
+    if(last&&getUser(last)){login(last);document.getElementById('report-fab').style.display='flex';toggleAdminFab()}
+  }
   // Observer for lesson content population
   const obs=new MutationObserver(()=>populateVocabLesson());
   obs.observe(document.getElementById('lesson-content'),{childList:true});
