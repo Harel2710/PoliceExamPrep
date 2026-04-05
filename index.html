@@ -468,11 +468,6 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 .btn-google{background:#fff;color:#333;display:flex;align-items:center;justify-content:center;gap:var(--sp-sm);font-weight:700;padding:var(--sp-md) var(--sp-lg);border-radius:var(--r-md);border:none;font-size:14px;cursor:pointer;transition:var(--tr);font-family:var(--font);width:100%;min-height:46px}
 .btn-google:active{transform:scale(.97);opacity:.9}
 .btn-google svg{width:20px;height:20px;flex-shrink:0}
-.btn-phone{background:var(--okbg);color:var(--ok);border:1.5px solid rgba(74,222,128,.2);display:flex;align-items:center;justify-content:center;gap:var(--sp-sm);font-weight:700;padding:var(--sp-md) var(--sp-lg);border-radius:var(--r-md);font-size:14px;cursor:pointer;transition:var(--tr);font-family:var(--font);width:100%;min-height:46px}
-.btn-phone:active{transform:scale(.97);opacity:.9}
-.phone-verify-form{display:flex;flex-direction:column;gap:var(--sp-sm);animation:slideUp .3s ease}
-.phone-verify-form input{padding:var(--sp-lg);border:1.5px solid var(--brd);border-radius:var(--r-md);background:var(--card2);color:var(--txt);font-size:18px;text-align:center;outline:none;letter-spacing:6px;font-family:var(--font);direction:ltr;min-height:50px}
-.phone-verify-form input:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
 .phone-back-link{font-size:13px;color:var(--pl);cursor:pointer;text-align:center;margin-top:var(--sp-xs);padding:var(--sp-sm);font-weight:600}
 
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
@@ -494,8 +489,6 @@ const FIREBASE_CONFIG = {
 };
 
 let firebaseReady = false;
-let recaptchaVerifier = null;
-let phoneConfirmResult = null;
 
 let db = null;
 
@@ -533,10 +526,22 @@ try {
 <h1 class="login-title">הכנה למבחני מיון</h1>
 <h2 class="login-subtitle">משטרת ישראל</h2>
 <p class="login-desc">לומדה אינטראקטיבית לתרגול דפ"ר ועברית</p>
+<div id="auth-login-view">
 <div class="login-form">
-<input type="text" id="username-input" placeholder="שם משתמש" maxlength="20" autocomplete="off">
+<input type="email" id="login-email" placeholder="אימייל" autocomplete="email" dir="ltr" style="text-align:right">
+<input type="password" id="login-password" placeholder="סיסמה" autocomplete="current-password">
 <button id="login-btn" class="btn btn-primary">התחבר</button>
-<button id="register-btn" class="btn btn-secondary">הרשמה</button>
+</div>
+<p style="font-size:12px;color:var(--txtm);text-align:center;margin-top:var(--sp-sm)">אין לך חשבון? <a href="#" id="show-register-link" style="color:var(--pl);font-weight:600;text-decoration:underline">הרשמה</a></p>
+</div>
+<div id="auth-register-view" class="hidden">
+<div class="login-form">
+<input type="text" id="reg-name" placeholder="שם מלא" maxlength="30" autocomplete="name">
+<input type="email" id="reg-email" placeholder="אימייל" autocomplete="email" dir="ltr" style="text-align:right">
+<input type="password" id="reg-password" placeholder="סיסמה (6 תווים לפחות)" autocomplete="new-password">
+<button id="register-btn" class="btn btn-primary">הרשמה</button>
+</div>
+<p style="font-size:12px;color:var(--txtm);text-align:center;margin-top:var(--sp-sm)">כבר יש לך חשבון? <a href="#" id="show-login-link" style="color:var(--pl);font-weight:600;text-decoration:underline">התחברות</a></p>
 </div>
 <p id="login-error" class="error-msg"></p>
 <div class="login-divider">או התחבר עם</div>
@@ -545,21 +550,7 @@ try {
 <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
 Google
 </button>
-<button class="btn-phone" id="phone-login-btn" onclick="showPhoneLogin()">📱 קוד חד-פעמי לטלפון</button>
 </div>
-<div id="phone-verify-area" class="hidden">
-<div class="phone-verify-form">
-<input type="tel" id="phone-input" placeholder="05X-XXXXXXX" dir="ltr" style="letter-spacing:1px">
-<button class="btn btn-primary" id="send-code-btn" onclick="sendPhoneCode()">שלח קוד</button>
-<div id="phone-code-area" class="hidden">
-<p style="font-size:12px;color:var(--txtl);text-align:center;margin:4px 0">הזן את הקוד שנשלח אליך</p>
-<input type="text" id="verify-code-input" placeholder="000000" maxlength="6" dir="ltr">
-<button class="btn btn-primary" onclick="verifyPhoneCode()">אמת קוד</button>
-</div>
-<div class="phone-back-link" onclick="hidePhoneLogin()">← חזרה</div>
-</div>
-</div>
-<div id="recaptcha-container"></div>
 <div style="margin-top:16px"><button id="admin-login-btn" class="btn btn-sm" style="background:transparent;color:var(--txtm);border:none;font-size:12px;text-decoration:underline;cursor:pointer">כניסת אדמין</button></div>
 </div>
 </div>
@@ -923,7 +914,7 @@ let simTimer=null,simRemaining=0,isSimMode=false,simCat='',simAnswers=[];
 const getUsers=()=>{try{return JSON.parse(localStorage.getItem('pApp_u'))||{}}catch{return{}}};
 const saveUsers=u=>localStorage.setItem('pApp_u',JSON.stringify(u));
 const getUser=n=>getUsers()[n]||null;
-const saveUser=u=>{const us=getUsers();us[u.name]=u;saveUsers(us);syncUserToFirestore(u)};
+const saveUser=u=>{const us=getUsers();const key=u.uid||u.name;us[key]=u;saveUsers(us);syncUserToFirestore(u)};
 const newUser=n=>({name:n,points:0,completed:[],totalTime:0,lastActive:Date.now(),created:Date.now(),quizResults:{},classification:null});
 
 // ===== FIRESTORE SYNC =====
@@ -933,22 +924,25 @@ let _firestoreCacheTime=0;
 const FIRESTORE_CACHE_TTL=30000; // 30 seconds
 
 function syncUserToFirestore(u){
-  if(!db||!u||!u.name)return;
+  if(!db||!u)return;
+  const docId=u.uid||u.name;
+  if(!docId)return;
   // Debounce: wait 2 seconds of inactivity before syncing
   if(_syncTimer)clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>{
     const doc={
       name:u.name,
+      email:u.email||'',
+      uid:u.uid||'',
       points:u.points||0,
       completed:u.completed||[],
       totalTime:u.totalTime||0,
       lastActive:Date.now(),
       created:u.created||Date.now(),
       quizResults:u.quizResults||{},
-      classification:u.classification||null,
-      firebaseUid:firebase.auth().currentUser?.uid||null
+      classification:u.classification||null
     };
-    db.collection('users').doc(u.name).set(doc,{merge:true}).then(()=>{
+    db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
       _firestoreUsersCache=null; // invalidate cache
     }).catch(e=>console.warn('Firestore sync error:',e));
@@ -1024,85 +1018,116 @@ function startTimeTracking(){
 }
 
 // ===== AUTH =====
-function login(n){
-  const u=getUser(n);
-  if(!u){document.getElementById('login-error').textContent='משתמש לא נמצא. לחץ הרשמה.';return}
-  user=u;if(!user.quizResults)user.quizResults={};
-  user.lastActive=Date.now();saveUser(user);
-  localStorage.setItem('pApp_last',n);showDash();toast('ברוך הבא, '+n+'!');startTimeTracking();
-  document.getElementById('report-fab').style.display='flex';
-  toggleAdminFab();
+function emailLogin(){
+  const errEl=document.getElementById('login-error');
+  const email=(document.getElementById('login-email').value||'').trim();
+  const pass=document.getElementById('login-password').value||'';
+  if(!email||!pass){errEl.textContent='הזן אימייל וסיסמה.';return}
+  errEl.textContent='';
+  document.getElementById('login-btn').disabled=true;
+  document.getElementById('login-btn').textContent='מתחבר...';
+  firebase.auth().signInWithEmailAndPassword(email,pass).then(cred=>{
+    const uid=cred.user.uid;
+    const displayName=cred.user.displayName||email.split('@')[0];
+    enterApp(uid,displayName,email);
+  }).catch(err=>{
+    document.getElementById('login-btn').disabled=false;
+    document.getElementById('login-btn').textContent='התחבר';
+    if(err.code==='auth/user-not-found'||err.code==='auth/invalid-credential')errEl.textContent='אימייל או סיסמה שגויים.';
+    else if(err.code==='auth/invalid-email')errEl.textContent='כתובת אימייל לא תקינה.';
+    else if(err.code==='auth/too-many-requests')errEl.textContent='יותר מדי ניסיונות. נסה שוב מאוחר יותר.';
+    else errEl.textContent='שגיאה: '+(err.message||err.code);
+  });
+}
+function emailRegister(){
+  const errEl=document.getElementById('login-error');
+  const name=(document.getElementById('reg-name').value||'').trim();
+  const email=(document.getElementById('reg-email').value||'').trim();
+  const pass=document.getElementById('reg-password').value||'';
+  if(!name||name.length<2){errEl.textContent='הזן שם מלא (2 תווים לפחות).';return}
+  if(!email){errEl.textContent='הזן כתובת אימייל.';return}
+  if(pass.length<6){errEl.textContent='סיסמה חייבת להכיל לפחות 6 תווים.';return}
+  errEl.textContent='';
+  document.getElementById('register-btn').disabled=true;
+  document.getElementById('register-btn').textContent='נרשם...';
+  firebase.auth().createUserWithEmailAndPassword(email,pass).then(cred=>{
+    return cred.user.updateProfile({displayName:name}).then(()=>{
+      const uid=cred.user.uid;
+      enterApp(uid,name,email);
+    });
+  }).catch(err=>{
+    document.getElementById('register-btn').disabled=false;
+    document.getElementById('register-btn').textContent='הרשמה';
+    if(err.code==='auth/email-already-in-use')errEl.textContent='אימייל זה כבר רשום. נסה להתחבר.';
+    else if(err.code==='auth/invalid-email')errEl.textContent='כתובת אימייל לא תקינה.';
+    else if(err.code==='auth/weak-password')errEl.textContent='סיסמה חלשה מדי.';
+    else errEl.textContent='שגיאה: '+(err.message||err.code);
+  });
+}
+function enterApp(uid,displayName,email){
+  // Use uid as the unique storage key, displayName for display
+  let u=getUser(uid);
+  if(!u){
+    u=newUser(displayName);
+    u.uid=uid;
+    u.email=email||'';
+  }
+  u.name=displayName;
+  u.uid=uid;
+  if(email)u.email=email;
+  if(!u.quizResults)u.quizResults={};
+  u.lastActive=Date.now();
+  u.firebaseUid=uid;
+  // Merge from Firestore if available
+  if(db){
+    db.collection('users').doc(uid).get().then(doc=>{
+      if(doc.exists){u=mergeFirestoreUser(doc.data(),u);u.uid=uid;u.name=displayName;if(email)u.email=email}
+      user=u;saveUser(user);
+      localStorage.setItem('pApp_last',uid);showDash();startTimeTracking();
+      document.getElementById('report-fab').style.display='flex';
+      toggleAdminFab();
+    }).catch(()=>{
+      user=u;saveUser(user);
+      localStorage.setItem('pApp_last',uid);showDash();startTimeTracking();
+      document.getElementById('report-fab').style.display='flex';
+      toggleAdminFab();
+    });
+  } else {
+    user=u;saveUser(user);
+    localStorage.setItem('pApp_last',uid);showDash();startTimeTracking();
+    document.getElementById('report-fab').style.display='flex';
+    toggleAdminFab();
+  }
+  toast('ברוך הבא, '+displayName+'!');
 }
 function loginAdmin(){
   const pass=prompt('הזן סיסמת אדמין:');
   if(!pass)return;
   if(pass!==ADMIN_PASS){toast('סיסמה שגויה');return}
-  const n='admin';
-  let u=getUser(n);
-  if(!u){u=newUser(n);u.isAdmin=true;saveUser(u)}
+  const uid='admin';
+  let u=getUser(uid);
+  if(!u){u=newUser('admin');u.isAdmin=true;u.uid=uid;saveUser(u)}
   user=u;user.isAdmin=true;if(!user.quizResults)user.quizResults={};
   user.lastActive=Date.now();saveUser(user);
-  localStorage.setItem('pApp_last',n);showDash();toast('ברוך הבא, אדמין!');startTimeTracking();
-  document.getElementById('report-fab').style.display='flex';
-  toggleAdminFab();
-}
-function register(n){
-  if(n.length<2){document.getElementById('login-error').textContent='שם קצר מדי.';return}
-  if(getUser(n)){document.getElementById('login-error').textContent='שם קיים.';return}
-  user=newUser(n);saveUser(user);localStorage.setItem('pApp_last',n);
-  showDash();toast('ברוך הבא!');startTimeTracking();
+  localStorage.setItem('pApp_last',uid);showDash();toast('ברוך הבא, אדמין!');startTimeTracking();
   document.getElementById('report-fab').style.display='flex';
   toggleAdminFab();
 }
 function logout(){
   user=null;localStorage.removeItem('pApp_last');
   if(timeTracker)clearInterval(timeTracker);
-  document.getElementById('username-input').value='';
   document.getElementById('login-error').textContent='';
   document.getElementById('report-fab').style.display='none';
   document.getElementById('admin-edit-fab').style.display='none';
-  hidePhoneLogin();
+  // Reset login form
+  document.getElementById('auth-login-view').classList.remove('hidden');
+  document.getElementById('auth-register-view').classList.add('hidden');
+  ['login-email','login-password','reg-name','reg-email','reg-password'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   if(firebaseReady){try{firebase.auth().signOut()}catch(e){}}
   showScreen('login-screen');
 }
 
 // ===== FIREBASE AUTH =====
-function firebaseLoginUser(name){
-  let u=getUser(name);
-  if(!u){u=newUser(name)}
-  // Try to pull from Firestore and merge
-  if(db){
-    db.collection('users').doc(name).get().then(doc=>{
-      if(doc.exists){
-        const merged=mergeFirestoreUser(doc.data(),u);
-        u=merged;
-      }
-      u.name=name;
-      u.firebaseUid=firebase.auth().currentUser?.uid||null;
-      if(!u.quizResults)u.quizResults={};
-      u.lastActive=Date.now();
-      user=u;saveUser(user);
-      localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
-      document.getElementById('report-fab').style.display='flex';
-      toggleAdminFab();
-    }).catch(()=>{
-      // Firestore unavailable — proceed with local only
-      if(!u.quizResults)u.quizResults={};
-      u.lastActive=Date.now();
-      user=u;saveUser(user);
-      localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
-      document.getElementById('report-fab').style.display='flex';
-      toggleAdminFab();
-    });
-  } else {
-    if(!u.quizResults)u.quizResults={};
-    u.lastActive=Date.now();
-    user=u;saveUser(user);
-    localStorage.setItem('pApp_last',name);showDash();startTimeTracking();
-    document.getElementById('report-fab').style.display='flex';
-    toggleAdminFab();
-  }
-}
 
 function googleLogin(){
   if(!firebaseReady){toast('Firebase לא מוגדר. הגדר את FIREBASE_CONFIG');return}
@@ -1111,12 +1136,12 @@ function googleLogin(){
   // Try popup first (works on most browsers including mobile)
   firebase.auth().signInWithPopup(provider).then(result=>{
     const name=result.user.displayName||result.user.email?.split('@')[0]||'User';
-    firebaseLoginUser(name);
-    toast('ברוך הבא, '+name+'!');
+    const uid=result.user.uid;
+    const email=result.user.email||'';
+    enterApp(uid,name,email);
   }).catch(err=>{
     console.error('Google login error:',err);
     if(err.code==='auth/popup-closed-by-user')return;
-    // If popup blocked on mobile, fall back to redirect
     if(err.code==='auth/popup-blocked'||err.code==='auth/cancelled-popup-request'){
       firebase.auth().signInWithRedirect(provider);
     } else {
@@ -1125,70 +1150,10 @@ function googleLogin(){
   });
 }
 
-function showPhoneLogin(){
-  document.getElementById('social-login-area').classList.add('hidden');
-  document.getElementById('phone-verify-area').classList.remove('hidden');
-  document.getElementById('phone-code-area').classList.add('hidden');
+function toggleAuthView(view){
+  document.getElementById('auth-login-view').classList.toggle('hidden',view!=='login');
+  document.getElementById('auth-register-view').classList.toggle('hidden',view!=='register');
   document.getElementById('login-error').textContent='';
-  if(firebaseReady&&!recaptchaVerifier){
-    try{
-      recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
-    }catch(e){console.warn('reCAPTCHA error:',e)}
-  }
-}
-
-function hidePhoneLogin(){
-  document.getElementById('social-login-area')?.classList.remove('hidden');
-  document.getElementById('phone-verify-area')?.classList.add('hidden');
-}
-
-function sendPhoneCode(){
-  if(!firebaseReady){toast('Firebase לא מוגדר');return}
-  let phone=document.getElementById('phone-input').value.trim();
-  if(!phone){toast('הזן מספר טלפון');return}
-  // Format Israeli phone
-  phone=phone.replace(/[-\s]/g,'');
-  if(phone.startsWith('05'))phone='+972'+phone.substring(1);
-  else if(phone.startsWith('5'))phone='+972'+phone;
-  if(!phone.startsWith('+'))phone='+972'+phone;
-  // Always create fresh reCAPTCHA
-  if(recaptchaVerifier){try{recaptchaVerifier.clear()}catch(e){}}
-  document.getElementById('recaptcha-container').innerHTML='';
-  try{
-    recaptchaVerifier=new firebase.auth.RecaptchaVerifier('recaptcha-container',{size:'invisible'});
-  }catch(e){console.warn('reCAPTCHA init:',e);toast('שגיאה באימות');return}
-  document.getElementById('send-code-btn').textContent='שולח...';
-  document.getElementById('send-code-btn').disabled=true;
-  firebase.auth().signInWithPhoneNumber(phone,recaptchaVerifier).then(result=>{
-    phoneConfirmResult=result;
-    document.getElementById('phone-code-area').classList.remove('hidden');
-    document.getElementById('send-code-btn').textContent='שלח קוד';
-    document.getElementById('send-code-btn').disabled=false;
-    toast('קוד נשלח!');
-  }).catch(err=>{
-    console.error('Phone auth error:',err);
-    document.getElementById('send-code-btn').textContent='שלח קוד';
-    document.getElementById('send-code-btn').disabled=false;
-    toast('שגיאה: '+err.message);
-    if(recaptchaVerifier){try{recaptchaVerifier.clear()}catch(e){}}
-    recaptchaVerifier=null;
-  });
-}
-
-function verifyPhoneCode(){
-  const code=document.getElementById('verify-code-input').value.trim();
-  if(!code||code.length<6){toast('הזן קוד בן 6 ספרות');return}
-  if(!phoneConfirmResult){toast('שלח קוד תחילה');return}
-  phoneConfirmResult.confirm(code).then(result=>{
-    const phone=result.user.phoneNumber||'';
-    const name=phone.replace('+972','0');
-    firebaseLoginUser(name);
-    toast('ברוך הבא!');
-    hidePhoneLogin();
-  }).catch(err=>{
-    console.error('Code verify error:',err);
-    toast('קוד שגוי, נסה שוב');
-  });
 }
 
 // ===== TAB NAVIGATION =====
@@ -1250,7 +1215,7 @@ function getTotalUserCount(){
   const el=document.getElementById('h-user-count');
   if(el)el.textContent=local;
   if(db){
-    db.collection('users').get().then(snap=>{
+    db.collection('users').orderBy('lastActive','desc').limit(300).get().then(snap=>{
       const merged=new Set(Object.keys(getUsers()));
       snap.forEach(doc=>merged.add(doc.id));
       if(el)el.textContent=merged.size;
@@ -2717,9 +2682,13 @@ function showAdminReports(){
 
 // ===== INIT =====
 function init(){
-  document.getElementById('login-btn').onclick=()=>{const n=document.getElementById('username-input').value.trim();if(n)login(n)};
-  document.getElementById('register-btn').onclick=()=>{const n=document.getElementById('username-input').value.trim();if(n)register(n)};
-  document.getElementById('username-input').onkeydown=e=>{if(e.key==='Enter'){const n=e.target.value.trim();if(n){getUser(n)?login(n):register(n)}}document.getElementById('login-error').textContent=''};
+  // Auth buttons
+  document.getElementById('login-btn').onclick=emailLogin;
+  document.getElementById('register-btn').onclick=emailRegister;
+  document.getElementById('show-register-link').onclick=e=>{e.preventDefault();toggleAuthView('register')};
+  document.getElementById('show-login-link').onclick=e=>{e.preventDefault();toggleAuthView('login')};
+  document.getElementById('login-password').onkeydown=e=>{if(e.key==='Enter')emailLogin()};
+  document.getElementById('reg-password').onkeydown=e=>{if(e.key==='Enter')emailRegister()};
   document.getElementById('logout-btn').onclick=logout;
   document.getElementById('lb-btn').onclick=showLB;
   document.getElementById('next-btn').onclick=nextQ;
@@ -2734,20 +2703,23 @@ function init(){
   document.getElementById('admin-login-btn').onclick=loginAdmin;
   document.getElementById('admin-reports-btn').onclick=showAdminReports;
   document.getElementById('admin-lb-config-btn').onclick=showAdminLBConfig;
-  // Auto-login
+  // Auto-login: try localStorage first, then Firebase redirect
   const last=localStorage.getItem('pApp_last');
   if(last&&getUser(last)){
-    login(last);document.getElementById('report-fab').style.display='flex';toggleAdminFab();
+    user=getUser(last);if(!user.quizResults)user.quizResults={};
+    user.lastActive=Date.now();saveUser(user);
+    showDash();startTimeTracking();
+    document.getElementById('report-fab').style.display='flex';toggleAdminFab();
   } else if(firebaseReady){
-    // Show loading state while checking Firebase redirect
     const loginBtn=document.getElementById('google-login-btn');
     const origText=loginBtn?.innerHTML;
     if(loginBtn)loginBtn.innerHTML='<span style="font-size:14px">מתחבר...</span>';
     firebase.auth().getRedirectResult().then(function(result){
       if(result && result.user){
         const name=result.user.displayName||result.user.email?.split('@')[0]||'User';
-        firebaseLoginUser(name);
-        toast('ברוך הבא, '+name+'!');
+        const uid=result.user.uid;
+        const email=result.user.email||'';
+        enterApp(uid,name,email);
       } else {
         if(loginBtn)loginBtn.innerHTML=origText;
       }
