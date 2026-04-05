@@ -11,7 +11,20 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}</script>
+<script>
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
+// Auto-refresh when app resumes from background
+(function(){
+  var lastActive=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&Date.now()-lastActive>30000){
+      window.location.reload();
+    }
+    lastActive=Date.now();
+  });
+  window.addEventListener('pageshow',function(e){if(e.persisted)window.location.reload()});
+})();
+</script>
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>הכנה למבחני מיון - משטרת ישראל</title>
