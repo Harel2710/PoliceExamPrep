@@ -227,6 +227,16 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 .options-container{display:flex;flex-direction:column;gap:var(--sp-sm)}
 .sim-nav-bar{display:flex;gap:var(--sp-md);justify-content:center;margin-top:var(--sp-lg);padding-bottom:var(--sp-xl)}
 .sim-nav-btn{flex:1;max-width:180px;padding:12px 16px;font-size:14px;font-weight:700}
+.sim-quit-btn{color:var(--err)!important;border-color:var(--err)!important;font-weight:700}
+.sim-quit-btn:active{background:var(--errbg)!important}
+.sim-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
+.sim-confirm-box{background:var(--card);border:1px solid var(--brd);border-radius:var(--r-lg);padding:28px 24px;max-width:320px;width:90%;text-align:center;box-shadow:var(--sh-lg)}
+.sim-confirm-box h3{color:var(--txt);font-size:17px;margin-bottom:8px}
+.sim-confirm-box p{color:var(--txts);font-size:13px;margin-bottom:20px}
+.sim-confirm-btns{display:flex;gap:10px}
+.sim-confirm-btns .btn{flex:1;padding:12px;font-size:14px;font-weight:700}
+.sim-confirm-btns .btn-quit{background:var(--err);color:#fff;border:none;border-radius:var(--r-md);cursor:pointer}
+.sim-confirm-btns .btn-quit:active{opacity:.8}
 .option-btn{border:1.5px solid var(--brd);border-radius:var(--r-md);padding:14px;font-size:14px;font-weight:600;cursor:pointer;transition:var(--tr);text-align:right;display:flex;align-items:center;gap:var(--sp-md);animation:slideUp .25s ease backwards;font-family:var(--font);background:var(--card2);color:var(--txt);min-height:50px}
 .option-btn:nth-child(1){animation-delay:.03s}.option-btn:nth-child(2){animation-delay:.06s}
 .option-btn:nth-child(3){animation-delay:.09s}.option-btn:nth-child(4){animation-delay:.12s}
@@ -687,17 +697,39 @@ Google
 
 <!-- SIM SELECTION -->
 <div id="sim-screen" class="screen">
-<header class="screen-header"><button class="back-btn" id="quit-sim-btn" onclick="quitSim()">→ חזרה</button><h2 id="sim-header">📝 סימולציית מבחן רמה</h2></header>
+<header class="screen-header"><button class="back-btn sim-quit-btn" id="quit-sim-btn" onclick="quitSim()">✕ עזוב מבחן</button><h2 id="sim-header">📝 סימולציית מבחן רמה</h2></header>
 <div class="selection-content" id="sim-selection">
 <div class="selection-card glass" id="sim-heb"><h3>סימולציית עברית</h3><p>33 שאלות | 23 דקות | ללא משוב מיידי</p></div>
 <div class="selection-card glass" id="sim-dpr"><h3>סימולציית דפ"ר</h3><p>30 שאלות | 25 דקות | ללא משוב מיידי</p></div>
+</div>
+<div class="sim-intro hidden" id="sim-intro">
+<div class="lesson-card glass" style="margin:16px 12px">
+<h3 id="sim-intro-title">הכנה למבחן</h3>
+<div id="sim-intro-goals"></div>
+</div>
+<div class="lesson-card glass" style="margin:0 12px">
+<h3>📋 פרטי המבחן</h3>
+<div id="sim-intro-details"></div>
+</div>
+<div class="lesson-card glass" style="margin:16px 12px">
+<h3>⚠️ לפני שמתחילים</h3>
+<ul style="line-height:2;font-size:14px">
+<li>הכינו <strong>נייר טיוטה ועט</strong> לרישומים</li>
+<li>שבו <strong>במקום שקט</strong> וללא הפרעות</li>
+<li>ודאו שיש לכם <strong>זמן פנוי</strong> להשלמת המבחן</li>
+<li>ברגע שתלחצו "התחל" - <strong>השעון מתחיל לרוץ</strong></li>
+</ul>
+</div>
+<div style="padding:12px 16px 24px;text-align:center">
+<button class="btn btn-primary" id="sim-intro-start" style="padding:16px 48px;font-size:16px;font-weight:800">🚀 התחל מבחן</button>
+</div>
 </div>
 <div class="quiz-body hidden" id="sim-quiz-body">
 <div class="question-card glass"><p id="sim-q-text" class="question-text"></p></div>
 <div id="sim-opts" class="options-container"></div>
 <div class="sim-nav-bar">
 <button class="btn btn-secondary sim-nav-btn" id="sim-nav-back" onclick="simNavBack()" style="display:none">→ הקודם</button>
-<button class="btn btn-primary sim-nav-btn" id="sim-nav-skip" onclick="simNavNext()">דלג ←</button>
+<button class="btn btn-primary sim-nav-btn" id="sim-nav-skip" onclick="simNavNext()">הבא ←</button>
 </div>
 </div>
 </div>
@@ -1368,32 +1400,12 @@ function openStep(idx){
 }
 
 function startPathSim(step){
-  // Start a simulation from the learning path (level or final)
   const cat=step.simCat;
-  const simKeyPrefix=step.simKey||'sim'; // 'level' or 'final'
+  const simKeyPrefix=step.simKey||'sim';
   simCat=cat;
-  const qs=getSimQuestions(cat);
-  if(!qs.length){toast('אין שאלות זמינות');return}
-  isSimMode=true;isBoostMode=false;simAdvancing=false;
-  qList=qs;qIdx=0;qCorrect=0;elapsed=0;simAnswers=new Array(qs.length).fill(-1);
-  const dur=cat==='hebrew'?23*60:25*60;
-  simRemaining=dur;
-  simEndTime=Date.now()+dur*1000;
-  // Store the simKey so endSim knows where to save
   window._pathSimKey=simKeyPrefix+'_'+cat;
-  document.getElementById('sim-selection').classList.add('hidden');
-  document.getElementById('sim-quiz-body').classList.remove('hidden');
-  showScreen('sim-screen');
-  document.getElementById('sim-header').textContent=step.title;
-  document.getElementById('quit-sim-btn').onclick=()=>quitSim();
-  clearAllTimers();
-  timerInt=setInterval(()=>{
-    simRemaining=Math.max(0,Math.ceil((simEndTime-Date.now())/1000));
-    elapsed=dur-simRemaining;
-    if(simRemaining<=0){clearAllTimers();endSim();return}
-    updateSimHeader();
-  },500);
-  renderSimQ();
+  showSimIntro(cat,simKeyPrefix+'_'+cat);
+  document.getElementById('sim-intro-start').onclick=()=>launchSim(cat);
 }
 
 // ===== LESSONS =====
@@ -2041,13 +2053,59 @@ function startBoost(cat){
 function showSimSelection(){
   document.getElementById('sim-selection').classList.remove('hidden');
   document.getElementById('sim-quiz-body').classList.add('hidden');
+  document.getElementById('sim-intro').classList.add('hidden');
   document.getElementById('sim-header').textContent='📝 סימולציית מבחן רמה';
   document.getElementById('quit-sim-btn').onclick=()=>showDash();
+  document.getElementById('quit-sim-btn').textContent='→ חזרה';
+  document.getElementById('quit-sim-btn').className='back-btn';
   showScreen('sim-screen');
 }
 
-function startSim(cat){
-  simCat=cat;
+function showSimIntro(cat,simKey){
+  const isHeb=cat==='hebrew';
+  const isLevel=simKey&&simKey.includes('level');
+  const isFinal=simKey&&simKey.includes('final');
+  const qCount=isHeb?33:30;
+  const mins=isHeb?23:25;
+  const catName=isHeb?'עברית':'דפ"ר';
+
+  // Goals
+  let goals='';
+  if(isLevel){
+    goals=`<p style="font-size:14px;line-height:1.8">מטרת מבחן הרמה היא <strong>למפות את הרמה הנוכחית</strong> שלך ב${catName}.</p>
+    <p style="font-size:14px;line-height:1.8">התוצאות יעזרו לך להבין על מה לשים דגש במסלול הלמידה.</p>`;
+  } else if(isFinal){
+    goals=`<p style="font-size:14px;line-height:1.8">מטרת מבחן הסיום היא <strong>למדוד את ההתקדמות</strong> שלך ב${catName} לאחר השלמת מסלול הלמידה.</p>
+    <p style="font-size:14px;line-height:1.8">השווה את התוצאות למבחן הרמה וראה כמה השתפרת!</p>`;
+  } else {
+    goals=`<p style="font-size:14px;line-height:1.8">סימולציה מלאה של מבחן ב${catName} בתנאים אמיתיים.</p>`;
+  }
+
+  // Details
+  const details=`<ul style="line-height:2;font-size:14px">
+    <li><strong>${qCount} שאלות</strong> - ${catName}</li>
+    <li><strong>${mins} דקות</strong> - הזמן המוקצב</li>
+    <li>ללא משוב מיידי - תראה תוצאות בסיום</li>
+    <li>ניתן לדלג ולחזור לשאלות קודמות</li>
+  </ul>`;
+
+  document.getElementById('sim-intro-title').textContent=isLevel?`🎯 מבחן רמה - ${catName}`:isFinal?`🏁 מבחן סיום - ${catName}`:`📝 סימולציית ${catName}`;
+  document.getElementById('sim-intro-goals').innerHTML=goals;
+  document.getElementById('sim-intro-details').innerHTML=details;
+
+  document.getElementById('sim-selection').classList.add('hidden');
+  document.getElementById('sim-quiz-body').classList.add('hidden');
+  document.getElementById('sim-intro').classList.remove('hidden');
+  document.getElementById('sim-header').textContent=isLevel?`מבחן רמה - ${catName}`:isFinal?`מבחן סיום - ${catName}`:`סימולציית ${catName}`;
+  document.getElementById('quit-sim-btn').textContent='→ חזרה';
+  document.getElementById('quit-sim-btn').className='back-btn';
+  document.getElementById('quit-sim-btn').onclick=()=>showDash();
+  showScreen('sim-screen');
+
+  return{cat,qCount,mins};
+}
+
+function launchSim(cat){
   const qs=getSimQuestions(cat);
   if(!qs.length){toast('אין שאלות זמינות');return}
   isSimMode=true;isBoostMode=false;simAdvancing=false;
@@ -2055,10 +2113,10 @@ function startSim(cat){
   const dur=cat==='hebrew'?23*60:25*60;
   simRemaining=dur;
   simEndTime=Date.now()+dur*1000;
-  document.getElementById('sim-selection').classList.add('hidden');
+  document.getElementById('sim-intro').classList.add('hidden');
   document.getElementById('sim-quiz-body').classList.remove('hidden');
-  showScreen('sim-screen');
-  document.getElementById('sim-header').textContent=cat==='hebrew'?'סימולציית עברית':'סימולציית דפ"ר';
+  document.getElementById('quit-sim-btn').textContent='✕ עזוב מבחן';
+  document.getElementById('quit-sim-btn').className='back-btn sim-quit-btn';
   document.getElementById('quit-sim-btn').onclick=()=>quitSim();
   clearAllTimers();
   timerInt=setInterval(()=>{
@@ -2068,6 +2126,12 @@ function startSim(cat){
     updateSimHeader();
   },500);
   renderSimQ();
+}
+
+function startSim(cat){
+  simCat=cat;
+  showSimIntro(cat,null);
+  document.getElementById('sim-intro-start').onclick=()=>launchSim(cat);
 }
 
 function renderSimQ(){
@@ -2093,7 +2157,7 @@ function renderSimQ(){
   });
   // Navigation buttons
   document.getElementById('sim-nav-back').style.display=qIdx>0?'':'none';
-  document.getElementById('sim-nav-skip').textContent=qIdx<qList.length-1?'דלג ←':'סיים מבחן';
+  document.getElementById('sim-nav-skip').textContent=qIdx<qList.length-1?'הבא ←':'סיים מבחן';
 }
 
 function handleSimAns(idx){
@@ -2125,11 +2189,22 @@ function updateSimHeader(){
 }
 
 function quitSim(){
-  if(isSimMode){
-    if(confirm('לסיים את הסימולציה?')){clearAllTimers();endSim()}
-    return;
-  }
-  showDash();
+  if(!isSimMode){showDash();return}
+  // Custom confirm dialog
+  const ov=document.createElement('div');
+  ov.className='sim-confirm-overlay';
+  ov.innerHTML=`<div class="sim-confirm-box">
+    <h3>האם אתה בטוח שברצונך לעצור את המבחן?</h3>
+    <p>לא תוכל לחזור לנקודה שבה עצרת</p>
+    <div class="sim-confirm-btns">
+      <button class="btn btn-secondary" id="sim-confirm-back">חזור למבחן</button>
+      <button class="btn btn-quit" id="sim-confirm-quit">צא מהמבחן</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('sim-confirm-back').onclick=()=>ov.remove();
+  document.getElementById('sim-confirm-quit').onclick=()=>{ov.remove();clearAllTimers();endSim()};
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};
 }
 
 function endSim(){
