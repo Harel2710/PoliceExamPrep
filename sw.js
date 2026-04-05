@@ -1,23 +1,22 @@
-const CACHE_NAME = 'police-app-v1';
+const CACHE_NAME = 'police-app-v2';
 
-// Network first strategy - always try fresh content
+// Network first strategy - only for GET requests (page, scripts, images)
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  // Skip Firebase/API requests - don't cache them
+  if (event.request.url.includes('firestore') || event.request.url.includes('googleapis')) return;
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Clone and cache the fresh response
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
       })
-      .catch(() => {
-        // Offline fallback - use cache
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
 
-// On activate, clear old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
