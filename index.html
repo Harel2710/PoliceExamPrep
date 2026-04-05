@@ -133,11 +133,11 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 
 /* Bottom Tab Bar */
 .tab-bar{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:rgba(17,24,39,.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--brd);display:flex;justify-content:space-around;align-items:center;height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));padding-bottom:calc(env(safe-area-inset-bottom,0px) + 4px);z-index:150}
-.tab-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:56px;min-height:44px;padding:var(--sp-xs) var(--sp-sm);cursor:pointer;transition:var(--tr);opacity:.35;-webkit-tap-highlight-color:transparent;position:relative}
+.tab-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;flex:1;min-height:44px;padding:var(--sp-xs) 2px;cursor:pointer;transition:var(--tr);opacity:.35;-webkit-tap-highlight-color:transparent;position:relative}
 .tab-item.active{opacity:1}
 .tab-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:20px;height:3px;border-radius:0 0 3px 3px;background:var(--p)}
 .tab-item .tab-icon{font-size:20px;line-height:1}
-.tab-item .tab-label{font-size:11px;font-weight:600;color:var(--txtm)}
+.tab-item .tab-label{font-size:9px;font-weight:600;color:var(--txtm);white-space:nowrap}
 .tab-item.active .tab-label{color:var(--pl);font-weight:700}
 
 /* Readiness Bar */
@@ -628,7 +628,7 @@ Google
 <div id="opts-container" class="options-container"></div>
 <div id="fb-container" class="feedback-container hidden">
 <p id="fb-text"></p><p id="fb-explanation"></p>
-<button id="next-btn" class="btn btn-primary btn-sm">הבא →</button>
+<button id="next-btn" class="btn btn-primary btn-sm">הבא ←</button>
 </div>
 </div>
 </div>
@@ -646,7 +646,7 @@ Google
 <div class="bd-total"><span>סה"כ</span><span id="r-total">+35</span></div>
 </div>
 <div class="results-actions">
-<button id="r-next" class="btn btn-primary">שלב הבא →</button>
+<button id="r-next" class="btn btn-primary">שלב הבא ←</button>
 <button id="r-back" class="btn btn-secondary">חזרה</button>
 </div>
 </div>
@@ -713,7 +713,7 @@ Google
 
 <!-- FLASHCARDS -->
 <div id="flashcard-screen" class="screen">
-<header class="screen-header"><button class="back-btn" onclick="endFlashcards()">→ חזרה</button><h2>🃏 פלאשקארדס</h2></header>
+<header class="screen-header"><button class="back-btn" onclick="endFlashcards()">→ חזרה</button><h2>🃏 כרטיסיות לימוד</h2></header>
 <div class="flashcard-area">
 <div class="fc-progress"><div class="progress-bar"><div class="progress-fill" id="fc-prog"></div></div></div>
 <div class="flashcard-counter" id="fc-counter">1/86</div>
@@ -740,10 +740,10 @@ Google
 
 <!-- TAB BAR -->
 <nav id="tab-bar" class="tab-bar" style="display:none">
-<div class="tab-item active" data-tab="path" onclick="switchTab('path')"><span class="tab-icon">📚</span><span class="tab-label">מסלול</span></div>
-<div class="tab-item" data-tab="boost" onclick="switchTab('boost')"><span class="tab-icon">⚡</span><span class="tab-label">בוסט</span></div>
-<div class="tab-item" data-tab="flashcards" onclick="switchTab('flashcards')"><span class="tab-icon">🃏</span><span class="tab-label">קלפים</span></div>
-<div class="tab-item" data-tab="analytics" onclick="switchTab('analytics')"><span class="tab-icon">📊</span><span class="tab-label">ניתוח</span></div>
+<div class="tab-item active" data-tab="path" onclick="switchTab('path')"><span class="tab-icon">📚</span><span class="tab-label">מסלול הלמידה</span></div>
+<div class="tab-item" data-tab="boost" onclick="switchTab('boost')"><span class="tab-icon">⚡</span><span class="tab-label">תרגול מהיר</span></div>
+<div class="tab-item" data-tab="flashcards" onclick="switchTab('flashcards')"><span class="tab-icon">🃏</span><span class="tab-label">כרטיסיות לימוד</span></div>
+<div class="tab-item" data-tab="analytics" onclick="switchTab('analytics')"><span class="tab-icon">📊</span><span class="tab-label">ניתוח ביצועים</span></div>
 <div class="tab-item" data-tab="more" onclick="switchTab('more')"><span class="tab-icon">☰</span><span class="tab-label">עוד</span></div>
 </nav>
 
@@ -881,7 +881,7 @@ const ANALYTICS_EXTRA=[
   {name:'מבחן רמה - דפ"ר',keys:['level_dpr'],g:'dpr'},
   {name:'מבחן סיום - עברית',keys:['final_hebrew'],g:'heb'},
   {name:'מבחן סיום - דפ"ר',keys:['final_dpr'],g:'dpr'},
-  {name:'פלאשקארדס',keys:['flashcards'],g:'heb'}
+  {name:'כרטיסיות לימוד',keys:['flashcards'],g:'heb'}
 ];
 // Flat list for legacy compat
 const ANALYTICS_CATS=[...ANALYTICS_GROUPS[0].cats,...ANALYTICS_GROUPS[1].cats,...ANALYTICS_EXTRA];
@@ -1657,7 +1657,7 @@ function handleAns(btn,correct,expl,container){
   fb.className='feedback-container '+(correct?'correct-fb':'wrong-fb');
   document.getElementById('fb-explanation').textContent=expl||'';
   fb.classList.remove('hidden');
-  document.getElementById('next-btn').textContent=qIdx>=qList.length-1?'סיים →':'הבא →';
+  document.getElementById('next-btn').textContent=qIdx>=qList.length-1?'סיים ←':'הבא ←';
 }
 
 function nextQ(){qIdx++;qIdx>=qList.length?endQuiz():renderQ()}
@@ -1697,18 +1697,25 @@ function endQuiz(){
   }
   saveUser(user);
   if(pct>=80)confetti();
-  document.getElementById('r-next').onclick=()=>{
-    if(isBoostMode){showDash();return}
-    // Find next unlocked step in same category or go to dashboard
-    const curCat=PATH[curStep]?.cat;
-    let nextIdx=-1;
-    for(let j=curStep+1;j<PATH.length;j++){
-      if(PATH[j].cat===curCat&&!(user.completed||[]).includes(PATH[j].id)){nextIdx=j;break}
-    }
-    if(nextIdx>=0)openStep(nextIdx);else showDash();
-  };
-  document.getElementById('r-next').textContent=isBoostMode?'חזרה לדשבורד':'שלב הבא →';
-  document.getElementById('r-back').onclick=()=>isBoostMode?showDash():showPath();
+  if(isBoostMode){
+    const _bc=boostCat;
+    document.getElementById('r-next').textContent='⚡ בוסט נוסף ←';
+    document.getElementById('r-next').onclick=()=>{isBoostMode=false;startBoost(_bc==='hebrew'?'hebrew':'dpr')};
+    document.getElementById('r-back').textContent='חזרה למסך ראשי';
+    document.getElementById('r-back').onclick=()=>{isBoostMode=false;showDash()};
+  } else {
+    document.getElementById('r-next').onclick=()=>{
+      const curCat=PATH[curStep]?.cat;
+      let nextIdx=-1;
+      for(let j=curStep+1;j<PATH.length;j++){
+        if(PATH[j].cat===curCat&&!(user.completed||[]).includes(PATH[j].id)){nextIdx=j;break}
+      }
+      if(nextIdx>=0)openStep(nextIdx);else showDash();
+    };
+    document.getElementById('r-next').textContent='שלב הבא ←';
+    document.getElementById('r-back').textContent='חזרה';
+    document.getElementById('r-back').onclick=()=>showPath();
+  }
   isBoostMode=false;
   showScreen('results-screen');
 }
@@ -2603,7 +2610,7 @@ function endFlashcardSession(){
   }
   if(fcIdx>0){
     const pct=Math.round(fcKnown/(fcKnown+fcUnknown)*100);
-    toast(`פלאשקארדס: ${fcKnown}/${fcKnown+fcUnknown} ידעת (${pct}%) | +15 נקודות`);
+    toast(`כרטיסיות לימוד: ${fcKnown}/${fcKnown+fcUnknown} ידעת (${pct}%) | +15 נקודות`);
   }
   showDash();
 }
