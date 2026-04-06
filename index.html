@@ -118,7 +118,9 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 /* Dashboard title bar */
 .dash-title-bar{background:rgba(17,24,39,.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--brd);padding:var(--sp-md) var(--sp-lg);padding-top:calc(var(--sp-md) + var(--st));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .dash-title-text{font-size:14px;font-weight:700;color:var(--txt);letter-spacing:-.2px}
-.dash-user-count{font-size:11px;font-weight:600;color:var(--pl);background:rgba(96,165,250,.1);padding:4px 10px;border-radius:var(--r-sm)}
+.dash-user-count{font-size:11px;font-weight:600;color:var(--pl);background:rgba(96,165,250,.1);padding:4px 10px;border-radius:var(--r-sm);display:flex;align-items:center;gap:6px}
+.ucount-sep{opacity:.3;font-size:10px}
+.ucount-live{color:#4ade80}
 .screen-header{background:rgba(17,24,39,.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--brd);padding:var(--sp-md) var(--sp-lg);padding-top:calc(var(--sp-md) + var(--st));display:flex;align-items:center;gap:var(--sp-md);color:#fff;position:sticky;top:0;z-index:100}
 .screen-header h2{font-size:16px;font-weight:700;flex:1;text-align:center}
 .back-btn,.logout-btn{background:rgba(255,255,255,.06);border:1px solid var(--brd);color:#fff;font-size:13px;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:var(--r-sm);white-space:nowrap;transition:var(--tr);min-height:36px}
@@ -240,6 +242,8 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 .options-container{display:flex;flex-direction:column;gap:var(--sp-sm)}
 .sim-nav-bar{display:flex;gap:var(--sp-md);justify-content:center;margin-top:var(--sp-lg);padding-bottom:var(--sp-xl)}
 .sim-nav-btn{flex:1;max-width:180px;padding:12px 16px;font-size:14px;font-weight:700}
+.btn-finish{background:rgba(245,158,11,.15);color:#f59e0b;border:1.5px solid rgba(245,158,11,.4);border-radius:var(--r-md);cursor:pointer}
+.btn-finish:active{background:rgba(245,158,11,.25)}
 .sim-quit-btn{color:var(--err)!important;border-color:var(--err)!important;font-weight:700}
 .sim-quit-btn:active{background:var(--errbg)!important}
 .sim-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
@@ -590,7 +594,7 @@ Google
 <div id="dash-screen" class="screen">
 <header class="dash-title-bar">
 <div class="dash-title-text">הכנה למבחני מיון - דפ"ר ועברית</div>
-<div class="dash-user-count"><span id="h-user-count">0</span> משתמשים</div>
+<div class="dash-user-count"><span class="ucount-item">👥 <span id="h-user-count">0</span> רשומים</span><span class="ucount-sep">|</span><span class="ucount-item ucount-live">🟢 <span id="h-live-count">0</span> מחוברים</span></div>
 </header>
 <div id="readiness-bar" class="readiness-bar">
 <div class="readiness-top">
@@ -742,6 +746,7 @@ Google
 <div id="sim-opts" class="options-container"></div>
 <div class="sim-nav-bar">
 <button class="btn btn-secondary sim-nav-btn" id="sim-nav-back" onclick="simNavBack()" style="display:none">→ הקודם</button>
+<button class="btn btn-finish sim-nav-btn" id="sim-nav-finish" onclick="confirmFinishSim()">סיים מבחן</button>
 <button class="btn btn-primary sim-nav-btn" id="sim-nav-skip" onclick="simNavNext()">הבא ←</button>
 </div>
 </div>
@@ -868,8 +873,8 @@ Google
 // ===== LEARNING PATH =====
 const PATH=[
   {id:'intro',type:'lesson',cat:'general',title:'מבוא - הכנה למבחנים',icon:'📋',desc:'מבנה המבחן, ציונים וטיפים'},
-  {id:'level_sim_heb',type:'sim',cat:'general',title:'מבחן רמה - עברית',icon:'📝',desc:'סימולציה למיפוי רמתך בעברית',simCat:'hebrew',simKey:'level'},
-  {id:'level_sim_dpr',type:'sim',cat:'general',title:'מבחן רמה - דפ"ר',icon:'📝',desc:'סימולציה למיפוי רמתך בדפ"ר',simCat:'dpr',simKey:'level'},
+  // === מסלול עברית ===
+  {id:'level_sim_heb',type:'sim',cat:'hebrew',title:'מבחן רמה עברית',icon:'📝',desc:'סימולציה למיפוי רמתך בעברית',simCat:'hebrew',simKey:'level'},
   {id:'vocab',type:'lesson',cat:'hebrew',title:'אוצר מילים ומילים דומות',icon:'📖',desc:'רשימת מילים, מילים דומות וביטויים'},
   {id:'heb_ex1',type:'quiz',cat:'hebrew',title:'תרגול עברית 1',icon:'✏️',desc:'אביון, אוושה, אצטבא, אשתקד, בגפו, בדיעבד',dataKey:'ex1'},
   {id:'heb_ex2',type:'quiz',cat:'hebrew',title:'תרגול עברית 2',icon:'✏️',desc:'גהר, בעתה, גוויה, גשמי, גילופין, דופי',dataKey:'ex2'},
@@ -886,6 +891,9 @@ const PATH=[
   {id:'comprehension2',type:'quiz',cat:'hebrew',title:'הבנת הנקרא 2',icon:'📰',desc:'שאלות הבנה נוספות',dataKey:'comprehension2'},
   {id:'spelling',type:'quiz',cat:'hebrew',title:'שגיאות כתיב',icon:'🔍',desc:'תרגול איתור שגיאות כתיב',dataKey:'spelling'},
   {id:'spelling2',type:'quiz',cat:'hebrew',title:'שגיאות כתיב 2',icon:'🔍',desc:'תרגול נוסף באיתור שגיאות',dataKey:'spelling2'},
+  {id:'final_sim_heb',type:'sim',cat:'hebrew',title:'מבחן סיום - עברית',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'hebrew',simKey:'final'},
+  // === מסלול דפ"ר ===
+  {id:'level_sim_dpr',type:'sim',cat:'dpr',title:'מבחן רמה דפ"ר',icon:'📝',desc:'סימולציה למיפוי רמתך בדפ"ר',simCat:'dpr',simKey:'level'},
   {id:'instr_learn',type:'lesson',cat:'dpr',title:'מילוי הוראות - הסבר',icon:'📋',desc:'5 סוגי שאלות, טיפים ודוגמאות'},
   {id:'instr_ex1',type:'quiz',cat:'dpr',title:'תרגול מילוי הוראות 1',icon:'✏️',desc:'שאלות מילוי הוראות',dataKey:'instr1'},
   {id:'dict_ex',type:'quiz',cat:'dpr',title:'תרגול מילון והוראות',icon:'📖',desc:'שאלות סדר אלפביתי והוראות',dataKey:'dictEx'},
@@ -903,8 +911,8 @@ const PATH=[
   {id:'shapes_ex',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 1',icon:'🔷',desc:'שאלות על לוגיקה צורנית',dataKey:'shapes'},
   {id:'shapes_ex2',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 2',icon:'🔶',desc:'המשך שאלות דפוסים צורניים',dataKey:'shapes2'},
   {id:'shapes_ex3',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 3',icon:'🔷',desc:'שאלות מתקדמות בלוגיקה צורנית',dataKey:'shapes3'},
-  {id:'final_sim_heb',type:'sim',cat:'general',title:'מבחן סיום - עברית',icon:'📝',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'hebrew',simKey:'final'},
-  {id:'final_sim_dpr',type:'sim',cat:'general',title:'מבחן סיום - דפ"ר',icon:'📝',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'dpr',simKey:'final'},
+  {id:'final_sim_dpr',type:'sim',cat:'dpr',title:'מבחן סיום - דפ"ר',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'dpr',simKey:'final'},
+  // === סיכום ===
   {id:'summary',type:'lesson',cat:'general',title:'סיכום',icon:'🎓',desc:'סיכום וטיפים אחרונים לקראת המבחן'},
 ];
 
@@ -1261,14 +1269,22 @@ function getBoostCount(){
 
 function getTotalUserCount(){
   const local=Object.keys(getUsers()).length;
-  // Update async from Firestore
   const el=document.getElementById('h-user-count');
+  const liveEl=document.getElementById('h-live-count');
   if(el)el.textContent=local;
+  if(liveEl)liveEl.textContent='0';
   if(db){
     db.collection('users').orderBy('lastActive','desc').limit(300).get().then(snap=>{
       const merged=new Set(Object.keys(getUsers()));
-      snap.forEach(doc=>merged.add(doc.id));
+      let liveCount=0;
+      const fiveMinAgo=Date.now()-5*60*1000;
+      snap.forEach(doc=>{
+        merged.add(doc.id);
+        const d=doc.data();
+        if(d.lastActive&&d.lastActive>fiveMinAgo)liveCount++;
+      });
       if(el)el.textContent=merged.size;
+      if(liveEl)liveEl.textContent=liveCount;
     }).catch(()=>{});
   }
 }
@@ -1343,18 +1359,20 @@ function renderPath(){
     // Parallel sub-path logic: Hebrew and DPR progress independently
     let locked=false;
     if(!done&&!user.isAdmin){
-      if(step.id==='level_sim_heb'||step.id==='level_sim_dpr'||step.id==='intro'){
+      if(step.id==='intro'){
         locked=false;
+      } else if(step.id==='level_sim_heb'||step.id==='level_sim_dpr'){
+        locked=!comp.includes('intro');
+      } else if(step.id==='final_sim_heb'){
+        locked=!PATH.filter(s=>s.cat==='hebrew'&&s.id!=='final_sim_heb').every(s=>comp.includes(s.id));
+      } else if(step.id==='final_sim_dpr'){
+        locked=!PATH.filter(s=>s.cat==='dpr'&&s.id!=='final_sim_dpr').every(s=>comp.includes(s.id));
+      } else if(step.id==='summary'){
+        locked=!comp.includes('final_sim_heb')||!comp.includes('final_sim_dpr');
       } else if(step.cat==='hebrew'||step.cat==='dpr'){
         let prevInCat=null;
         for(let j=i-1;j>=0;j--){if(PATH[j].cat===step.cat){prevInCat=PATH[j];break}}
         locked=prevInCat?!comp.includes(prevInCat.id):!comp.includes('intro');
-      } else if(step.id==='final_sim_heb'){
-        locked=!PATH.filter(s=>s.cat==='hebrew').every(s=>comp.includes(s.id));
-      } else if(step.id==='final_sim_dpr'){
-        locked=!PATH.filter(s=>s.cat==='dpr').every(s=>comp.includes(s.id));
-      } else if(step.id==='summary'){
-        locked=!comp.includes('final_sim_heb')||!comp.includes('final_sim_dpr');
       }
     }
     const current=!done&&!locked;
@@ -2170,7 +2188,8 @@ function renderSimQ(){
   });
   // Navigation buttons
   document.getElementById('sim-nav-back').style.display=qIdx>0?'':'none';
-  document.getElementById('sim-nav-skip').textContent=qIdx<qList.length-1?'הבא ←':'סיים מבחן';
+  document.getElementById('sim-nav-skip').style.display=qIdx<qList.length-1?'':'none';
+  document.getElementById('sim-nav-skip').textContent='הבא ←';
 }
 
 function handleSimAns(idx){
@@ -2183,13 +2202,38 @@ function handleSimAns(idx){
 
 function simNavNext(){
   if(qIdx>=qList.length-1){
-    const unanswered=simAnswers.filter(a=>a===-1).length;
-    const msg=unanswered>0?`יש ${unanswered} שאלות ללא מענה. לסיים?`:'לסיים את המבחן?';
-    if(confirm(msg)){clearAllTimers();endSim()}
+    confirmFinishSim();
     return;
   }
   qIdx++;
   renderSimQ();
+}
+
+function confirmFinishSim(){
+  const unanswered=simAnswers.filter(a=>a===-1).length;
+  const ov=document.createElement('div');
+  ov.className='sim-confirm-overlay';
+  let msg=unanswered>0
+    ?`<h3>יש ${unanswered} שאלות שטרם נענו</h3><p>ניתן לחזור ולהשלים את המענה, או לסיים את המבחן עכשיו</p>`
+    :'<h3>לסיים את המבחן?</h3><p>ענית על כל השאלות</p>';
+  ov.innerHTML=`<div class="sim-confirm-box">
+    ${msg}
+    <div class="sim-confirm-btns">
+      <button class="btn btn-secondary" id="finish-confirm-back">${unanswered>0?'חזור להשלים':'חזור למבחן'}</button>
+      <button class="btn btn-primary" id="finish-confirm-end">סיים מבחן</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('finish-confirm-back').onclick=()=>{
+    ov.remove();
+    if(unanswered>0){
+      // Jump to first unanswered question
+      const firstUn=simAnswers.indexOf(-1);
+      if(firstUn!==-1){qIdx=firstUn;renderSimQ()}
+    }
+  };
+  document.getElementById('finish-confirm-end').onclick=()=>{ov.remove();clearAllTimers();endSim()};
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};
 }
 function simNavBack(){
   if(qIdx>0){qIdx--;renderSimQ()}
@@ -2228,7 +2272,6 @@ function endSim(){
   qList.forEach((q,i)=>{
     const isCorrect=simAnswers[i]===q.a;
     if(isCorrect)correct++;
-    // Try to find category from dataKey match
     const cat=findQuestionCat(q);
     if(!catBreakdown[cat])catBreakdown[cat]={correct:0,total:0};
     catBreakdown[cat].total++;
@@ -2236,144 +2279,114 @@ function endSim(){
   });
   const pct=Math.round(correct/qList.length*100);
   const grade=pctToGrade(pct);
-  document.getElementById('sim-r-title').textContent=simCat==='hebrew'?'תוצאות סימולציית עברית':'תוצאות סימולציית דפ"ר';
-  document.getElementById('sim-r-score').textContent=correct+'/'+qList.length;
-  document.getElementById('sim-r-grade').textContent='ציון משוער: '+grade+'/8';
-  document.getElementById('sim-r-sub').textContent=pct>=75?'תוצאה מצוינת!':pct>=50?'יש מקום לשיפור':'צריך עוד תרגול';
-  // Breakdown
-  const bd=document.getElementById('sim-r-breakdown');
-  let bdHTML='<div style="font-weight:700;margin-bottom:8px">פירוט לפי נושא:</div>';
-  for(const[cat,data] of Object.entries(catBreakdown)){
-    const cp=Math.round(data.correct/data.total*100);
-    bdHTML+=`<div class="sim-cat-row"><span>${cat}</span><span style="font-weight:700;color:${cp>=70?'var(--ok)':cp>=40?'#f9a825':'var(--err)'}">${data.correct}/${data.total} (${cp}%)</span></div>`;
-  }
-  bdHTML+=`<div class="sim-cat-row" style="border-top:2px solid var(--p);margin-top:6px;padding-top:6px;font-weight:800"><span>זמן שימוש</span><span>${fmtTime(elapsed)}</span></div>`;
-  bdHTML+=`<div class="sim-cat-row" style="font-weight:700;color:var(--pl)"><span>⭐ ניקוד שנצבר</span><span>+${simTotal}</span></div>`;
-  bd.innerHTML=bdHTML;
-  // Insights
-  const ins=document.getElementById('sim-r-insights');
-  const sorted=Object.entries(catBreakdown).sort((a,b)=>(b[1].correct/b[1].total)-(a[1].correct/a[1].total));
-  let insHTML='';
-  if(sorted.length>0){
-    const best=sorted[0],worst=sorted[sorted.length-1];
-    insHTML+=`<span style="color:var(--ok)">חזק ב: ${best[0]} (${Math.round(best[1].correct/best[1].total*100)}%)</span>`;
-    if(sorted.length>1)insHTML+=`<span style="color:var(--err)">צריך לחזק: ${worst[0]} (${Math.round(worst[1].correct/worst[1].total*100)}%)</span>`;
-  }
-  ins.innerHTML=insHTML;
   // Award sim engagement points
   const simPts=35,simTimePts=Math.min(Math.floor(elapsed/60)*2,20),simTotal=simPts+simTimePts;
   if(user){user.points=(user.points||0)+simTotal}
-  // Save sim results for analytics
+  // Save sim results
+  const simKey=window._pathSimKey||('sim_'+simCat);
+  const isFinal=simKey.startsWith('final_');
+  const isLevel=simKey.startsWith('level_');
   if(user){
     if(!user.quizResults)user.quizResults={};
-    const saveKey=window._pathSimKey||('sim_'+simCat);
-    user.quizResults[saveKey]={correct:correct,total:qList.length,lastDate:Date.now(),catBreakdown:catBreakdown};
-    // Also save under generic sim key for backwards compat
+    user.quizResults[simKey]={correct:correct,total:qList.length,lastDate:Date.now(),catBreakdown:catBreakdown};
     user.quizResults['sim_'+simCat]={correct:correct,total:qList.length,lastDate:Date.now()};
     saveUser(user);
-    // Mark sim step complete (level or final)
     if(window._pathSimKey){
       const step=PATH[curStep];
-      if(step&&!user.completed.includes(step.id)){
-        user.completed.push(step.id);
-        saveUser(user);
-      }
+      if(step&&!user.completed.includes(step.id)){user.completed.push(step.id);saveUser(user)}
     }
-    // If final sim, show comparison
-    if(window._pathSimKey&&window._pathSimKey.startsWith('final_')){
-      showSimComparison(simCat,catBreakdown,correct,qList.length);
-      window._pathSimKey=null;
-      isSimMode=false;
-      return;
-    }
-    window._pathSimKey=null;
   }
+  // Build rich results HTML for ALL exams
+  showRichSimResults(simCat,catBreakdown,correct,qList.length,pct,grade,simTotal,isLevel,isFinal);
+  window._pathSimKey=null;
   isSimMode=false;
-  showScreen('sim-results-screen');
 }
 
-function showSimComparison(cat,finalBreakdown,finalCorrect,finalTotal){
-  const levelKey='level_'+cat;
-  const levelData=user.quizResults[levelKey];
-  const finalPct=Math.round(finalCorrect/finalTotal*100);
-  const finalGrade=pctToGrade(finalPct);
-
+function showRichSimResults(cat,breakdown,correct,total,pct,grade,pts,isLevel,isFinal){
+  const catName=cat==='hebrew'?'עברית':'דפ"ר';
+  const typeLabel=isLevel?'מבחן רמה':isFinal?'מבחן סיום':'סימולציה';
   let html='<div class="results-container">';
-  html+=`<div class="results-emoji">📊</div>`;
-  html+=`<h2 class="results-title">השוואת ${cat==='hebrew'?'עברית':'דפ"ר'}: מבחן רמה vs סיום</h2>`;
+  html+=`<div class="results-emoji">${pct>=75?'🌟':pct>=50?'💪':'📚'}</div>`;
+  html+=`<h2 class="results-title">${typeLabel} ${catName} - תוצאות</h2>`;
+  html+=`<div class="results-score">${correct}/${total}</div>`;
+  html+=`<div class="sim-grade">ציון משוער: ${grade}/8</div>`;
+  html+=`<p class="results-sub">${pct>=75?'תוצאה מצוינת!':pct>=50?'יש מקום לשיפור':'צריך עוד תרגול'}</p>`;
 
-  if(levelData){
-    const levelPct=Math.round(levelData.correct/levelData.total*100);
-    const levelGrade=pctToGrade(levelPct);
-    const diff=finalPct-levelPct;
+  // Comparison section (level vs final)
+  const compareKey=isFinal?'level_'+cat:isLevel?'final_'+cat:null;
+  const compareData=compareKey&&user?user.quizResults[compareKey]:null;
+  if(compareData&&compareData.catBreakdown){
+    const cPct=Math.round(compareData.correct/compareData.total*100);
+    const cGrade=pctToGrade(cPct);
+    const diff=pct-cPct;
     const diffColor=diff>0?'var(--ok)':diff<0?'var(--err)':'var(--txts)';
     const diffSign=diff>0?'+':'';
-
+    const leftLabel=isFinal?'מבחן רמה':'מבחן סיום';
+    const rightLabel=isFinal?'מבחן סיום':'מבחן רמה';
     html+=`<div class="glass" style="padding:16px;margin:12px 0;text-align:center">
+      <div style="font-weight:700;margin-bottom:10px">📊 השוואה</div>
       <div style="display:flex;justify-content:space-around;margin-bottom:12px">
-        <div><div style="font-size:11px;color:var(--txts)">מבחן רמה</div><div style="font-size:28px;font-weight:800">${levelPct}%</div><div style="font-size:12px;color:var(--txtm)">ציון ${levelGrade}/8</div></div>
-        <div style="font-size:24px;align-self:center;color:${diffColor};font-weight:800">${diffSign}${diff}%</div>
-        <div><div style="font-size:11px;color:var(--txts)">מבחן סיום</div><div style="font-size:28px;font-weight:800;color:var(--pl)">${finalPct}%</div><div style="font-size:12px;color:var(--txtm)">ציון ${finalGrade}/8</div></div>
+        <div><div style="font-size:11px;color:var(--txts)">${leftLabel}</div><div style="font-size:28px;font-weight:800">${cPct}%</div><div style="font-size:12px;color:var(--txtm)">ציון ${cGrade}/8</div></div>
+        <div style="font-size:24px;align-self:center;color:${diffColor};font-weight:800">${isFinal?diffSign+diff+'%':''}</div>
+        <div><div style="font-size:11px;color:var(--txts)">${rightLabel}</div><div style="font-size:28px;font-weight:800;color:var(--pl)">${pct}%</div><div style="font-size:12px;color:var(--txtm)">ציון ${grade}/8</div></div>
       </div>
     </div>`;
-
-    // Category comparison
-    if(levelData.catBreakdown&&finalBreakdown){
-      html+=`<div class="glass" style="padding:12px;margin:8px 0"><div style="font-weight:700;margin-bottom:8px">פירוט לפי נושא:</div>`;
-      for(const[catName,fData] of Object.entries(finalBreakdown)){
-        const fPct=Math.round(fData.correct/fData.total*100);
-        const lData=levelData.catBreakdown[catName];
-        const lPct=lData?Math.round(lData.correct/lData.total*100):null;
-        const catDiff=lPct!==null?fPct-lPct:null;
-        const catColor=catDiff!==null?(catDiff>0?'var(--ok)':catDiff<0?'var(--err)':'var(--txts)'):'var(--txts)';
-        html+=`<div class="sim-cat-row"><span>${catName}</span><span style="font-weight:600">${lPct!==null?lPct+'%':'--'} → <span style="color:${catColor}">${fPct}%</span></span></div>`;
-      }
-      html+=`</div>`;
+    // Per-category comparison
+    html+=`<div class="glass" style="padding:12px;margin:8px 0"><div style="font-weight:700;margin-bottom:8px">פירוט השוואתי:</div>`;
+    for(const[catN,data] of Object.entries(breakdown)){
+      const fPct=Math.round(data.correct/data.total*100);
+      const cCat=compareData.catBreakdown[catN];
+      const lPct=cCat?Math.round(cCat.correct/cCat.total*100):null;
+      const catDiff=lPct!==null?(isFinal?fPct-lPct:lPct-fPct):null;
+      const catColor=catDiff!==null?(catDiff>0?'var(--ok)':catDiff<0?'var(--err)':'var(--txts)'):'var(--txts)';
+      html+=`<div class="sim-cat-row"><span>${catN}</span><span style="font-weight:600">${lPct!==null?lPct+'%':'--'} → <span style="color:${catColor}">${fPct}%</span></span></div>`;
     }
-  } else {
-    html+=`<div class="glass" style="padding:16px;margin:12px 0;text-align:center">
-      <div style="font-size:28px;font-weight:800;color:var(--pl)">${finalPct}%</div>
-      <div style="font-size:14px;color:var(--txtm)">ציון ${finalGrade}/8</div>
-      <div style="font-size:12px;color:var(--txts);margin-top:8px">לא נמצא מבחן רמה להשוואה</div>
-    </div>`;
+    html+=`</div>`;
   }
 
-  // Recommendations
-  html+=`<div class="glass" style="padding:12px;margin:8px 0"><div style="font-weight:700;margin-bottom:8px">המלצות:</div>`;
-  const sortedCats=Object.entries(finalBreakdown).sort((a,b)=>(a[1].correct/a[1].total)-(b[1].correct/b[1].total));
-  const weakCats=sortedCats.filter(([,d])=>Math.round(d.correct/d.total*100)<70);
-  const strongCats=sortedCats.filter(([,d])=>Math.round(d.correct/d.total*100)>=70);
-
-  if(weakCats.length>0){
-    html+=`<div style="margin-bottom:8px;color:var(--err);font-size:13px">נושאים להעמקה:</div>`;
-    weakCats.forEach(([catName,d])=>{
-      const cp=Math.round(d.correct/d.total*100);
-      html+=`<div style="font-size:12px;padding:4px 0;color:var(--txts)">• ${catName} (${cp}%) - מומלץ לחזור על התרגולים בנושא</div>`;
-    });
+  // Category breakdown
+  html+=`<div class="glass" style="padding:12px;margin:8px 0"><div style="font-weight:700;margin-bottom:8px">פירוט לפי נושא:</div>`;
+  for(const[catN,data] of Object.entries(breakdown)){
+    const cp=Math.round(data.correct/data.total*100);
+    html+=`<div class="sim-cat-row"><span>${catN}</span><span style="font-weight:700;color:${cp>=70?'var(--ok)':cp>=40?'#f9a825':'var(--err)'}">${data.correct}/${data.total} (${cp}%)</span></div>`;
   }
-  if(strongCats.length>0){
-    html+=`<div style="margin-top:8px;margin-bottom:4px;color:var(--ok);font-size:13px">נושאים חזקים:</div>`;
-    strongCats.forEach(([catName,d])=>{
-      html+=`<div style="font-size:12px;padding:2px 0;color:var(--txts)">• ${catName} (${Math.round(d.correct/d.total*100)}%)</div>`;
-    });
-  }
-  if(finalPct>=75)html+=`<div style="margin-top:10px;font-weight:600;color:var(--ok)">כל הכבוד! רמת הכנה טובה מאוד.</div>`;
-  else if(finalPct>=50)html+=`<div style="margin-top:10px;font-weight:600;color:var(--pop)">יש שיפור! המשך לתרגל בנושאים החלשים.</div>`;
-  else html+=`<div style="margin-top:10px;font-weight:600;color:var(--err)">מומלץ לעבור שוב על המסלול ולהתמקד בנושאים החלשים.</div>`;
+  html+=`<div class="sim-cat-row" style="border-top:2px solid var(--p);margin-top:6px;padding-top:6px;font-weight:800"><span>זמן שימוש</span><span>${fmtTime(elapsed)}</span></div>`;
+  html+=`<div class="sim-cat-row" style="font-weight:700;color:var(--pl)"><span>⭐ ניקוד שנצבר</span><span>+${pts}</span></div>`;
   html+=`</div>`;
 
-  // Mark step complete
-  const step=PATH[curStep];
-  if(step&&user&&!user.completed.includes(step.id)){
-    user.completed.push(step.id);saveUser(user);
+  // Strengths & Weaknesses
+  const sorted=Object.entries(breakdown).sort((a,b)=>(b[1].correct/b[1].total)-(a[1].correct/a[1].total));
+  const strengths=sorted.filter(([,d])=>Math.round(d.correct/d.total*100)>=70);
+  const weaknesses=sorted.filter(([,d])=>Math.round(d.correct/d.total*100)<70);
+  if(strengths.length||weaknesses.length){
+    html+=`<div class="glass" style="padding:12px;margin:8px 0">`;
+    if(strengths.length){
+      html+=`<div style="font-weight:700;color:var(--ok);margin-bottom:6px">💪 חוזקות</div>`;
+      strengths.forEach(([n,d])=>{
+        const cp=Math.round(d.correct/d.total*100);
+        html+=`<div style="font-size:13px;padding:3px 0;color:var(--txts)">✅ ${n} — ${cp}%</div>`;
+      });
+    }
+    if(weaknesses.length){
+      html+=`<div style="font-weight:700;color:var(--err);margin-top:${strengths.length?'10':'0'}px;margin-bottom:6px">🎯 צריך לחזק</div>`;
+      weaknesses.forEach(([n,d])=>{
+        const cp=Math.round(d.correct/d.total*100);
+        html+=`<div style="font-size:13px;padding:3px 0;color:var(--txts)">⚠️ ${n} — ${cp}%</div>`;
+      });
+    }
+    // Recommendations
+    if(weaknesses.length)html+=`<div style="margin-top:10px;font-size:12px;color:var(--txtm)">מומלץ לחזור על התרגולים בנושאים שצריך לחזק</div>`;
+    if(pct>=75)html+=`<div style="margin-top:8px;font-weight:600;color:var(--ok)">כל הכבוד! רמת הכנה טובה מאוד.</div>`;
+    else if(pct>=50)html+=`<div style="margin-top:8px;font-weight:600;color:var(--pop)">יש שיפור! המשך לתרגל.</div>`;
+    else html+=`<div style="margin-top:8px;font-weight:600;color:var(--err)">מומלץ לעבור שוב על המסלול.</div>`;
+    html+=`</div>`;
   }
 
   html+=`<div class="results-actions" style="margin-top:14px">
     <button class="btn btn-primary" onclick="showDash()">חזרה למסלול</button>
-    <button class="btn btn-secondary" onclick="showSimReview()">סקירת שאלות</button>
+    <button class="btn btn-secondary" onclick="showSimReview()">סקירת שאלות 🔍</button>
   </div></div>`;
 
-  // Reuse sim-results-screen
   document.getElementById('sim-results-screen').innerHTML=html;
   showScreen('sim-results-screen');
 }
@@ -2488,6 +2501,46 @@ function showAnalytics(){
       html+=`<div class="analytics-topic"><div class="analytics-topic-top"><span class="analytics-topic-name">${e.name}</span><span class="analytics-topic-score" style="color:${numColor(e.pct)}">${e.pct}</span></div>`;
       html+=`<div style="font-size:.75rem;color:var(--txtm);margin:-2px 0 4px">${detailTxt}</div>`;
       html+=`<div class="analytics-topic-bar"><div class="analytics-topic-fill ${colorFor(e.pct)}" style="width:${e.pct}%"></div></div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // === Level vs Final comparison ===
+  const simPairs=[{cat:'hebrew',label:'עברית',color:'var(--p)'},{cat:'dpr',label:'דפ"ר',color:'#2dd4bf'}];
+  const hasAnySim=simPairs.some(p=>qr['level_'+p.cat]||qr['final_'+p.cat]);
+  if(hasAnySim){
+    html+=`<div class="analytics-extra-card glass"><div class="analytics-extra-title">📊 השוואת מבחני רמה וסיום</div>`;
+    simPairs.forEach(p=>{
+      const lv=qr['level_'+p.cat],fn=qr['final_'+p.cat];
+      if(!lv&&!fn)return;
+      const lvPct=lv?Math.round(lv.correct/lv.total*100):null;
+      const fnPct=fn?Math.round(fn.correct/fn.total*100):null;
+      html+=`<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,.03);border-radius:var(--r-md)">`;
+      html+=`<div style="font-weight:700;margin-bottom:8px;color:${p.color}">${p.label}</div>`;
+      html+=`<div style="display:flex;justify-content:space-around;text-align:center">`;
+      html+=`<div><div style="font-size:11px;color:var(--txts)">מבחן רמה</div><div style="font-size:22px;font-weight:800">${lvPct!==null?lvPct+'%':'--'}</div></div>`;
+      if(lvPct!==null&&fnPct!==null){
+        const diff=fnPct-lvPct;const dc=diff>0?'var(--ok)':diff<0?'var(--err)':'var(--txts)';
+        html+=`<div style="align-self:center;font-size:18px;font-weight:800;color:${dc}">${diff>0?'+':''}${diff}%</div>`;
+      } else {
+        html+=`<div style="align-self:center;font-size:14px;color:var(--txtm)">→</div>`;
+      }
+      html+=`<div><div style="font-size:11px;color:var(--txts)">מבחן סיום</div><div style="font-size:22px;font-weight:800;color:var(--pl)">${fnPct!==null?fnPct+'%':'--'}</div></div>`;
+      html+=`</div>`;
+      // Per-category comparison if both exist
+      if(lv&&lv.catBreakdown&&fn&&fn.catBreakdown){
+        html+=`<div style="margin-top:8px;font-size:12px">`;
+        for(const[cn,fd] of Object.entries(fn.catBreakdown)){
+          const fp=Math.round(fd.correct/fd.total*100);
+          const ld=lv.catBreakdown[cn];
+          const lp=ld?Math.round(ld.correct/ld.total*100):null;
+          const cd=lp!==null?fp-lp:null;
+          const cc=cd!==null?(cd>0?'var(--ok)':cd<0?'var(--err)':'var(--txts)'):'var(--txts)';
+          html+=`<div class="sim-cat-row" style="padding:2px 0"><span style="color:var(--txts)">${cn}</span><span style="font-weight:600">${lp!==null?lp+'%':'--'} → <span style="color:${cc}">${fp}%</span></span></div>`;
+        }
+        html+=`</div>`;
+      }
+      html+=`</div>`;
     });
     html+=`</div>`;
   }
@@ -2895,10 +2948,29 @@ function saveReports(r){localStorage.setItem('pApp_reports',JSON.stringify(r))}
 function openReport(){
   const activeScreen=[...document.querySelectorAll('.screen.active')].map(s=>s.id).join(',');
   let context='מסך: '+activeScreen;
+  let ref=null; // structured reference for admin
   const qText=document.getElementById('q-text');
   const simQText=document.getElementById('sim-q-text');
-  if(qText&&qText.textContent&&(activeScreen.includes('quiz')))context+='\nשאלה: '+qText.textContent;
-  if(simQText&&simQText.textContent&&(activeScreen.includes('sim-screen')))context+='\nשאלה: '+simQText.textContent;
+
+  if(activeScreen.includes('quiz')&&qText&&qText.textContent){
+    context+='\nשאלה: '+qText.textContent;
+    const step=PATH[curStep];
+    if(step&&step.dataKey){
+      ref={type:'quiz',dataKey:step.dataKey,qIdx:qIdx,stepId:step.id,stepTitle:step.title};
+      context+=`\n[מפתח: ${step.dataKey}, שאלה ${qIdx+1}]`;
+    }
+  } else if(activeScreen.includes('sim-screen')&&simQText&&simQText.textContent){
+    context+='\nשאלה: '+simQText.textContent;
+    ref={type:'sim',simCat:simCat,qIdx:qIdx,simKey:window._pathSimKey||'sim_'+simCat};
+    context+=`\n[סימולציה: ${simCat}, שאלה ${qIdx+1}/${qList.length}]`;
+  } else if(activeScreen.includes('flashcard')&&fcCards.length>0&&fcIdx<fcCards.length){
+    const card=fcCards[fcIdx];
+    context+=`\nכרטיסיה: ${card.word} = ${card.meaning}`;
+    ref={type:'flashcard',fcSrc:card._fcSrc,fcIdx:card._fcIdx,word:card.word};
+    context+=`\n[מפתח: ${card._fcSrc}:${card._fcIdx}]`;
+  }
+
+  window._reportRef=ref;
   document.getElementById('report-info').textContent=context;
   document.getElementById('report-text').value='';
   document.getElementById('report-modal').classList.remove('hidden');
@@ -2910,13 +2982,16 @@ function submitReport(){
   const text=document.getElementById('report-text').value.trim();
   if(!text){toast('כתוב תיאור של הבעיה');return}
   const reports=getReports();
-  reports.push({
+  const entry={
     user:user?user.name:'אנונימי',
     text:text,
     context:document.getElementById('report-info').textContent,
     timestamp:Date.now()
-  });
+  };
+  if(window._reportRef)entry.ref=window._reportRef;
+  reports.push(entry);
   saveReports(reports);
+  window._reportRef=null;
   closeReport();
   toast('הדיווח נשלח! תודה 🙏');
 }
@@ -2932,6 +3007,19 @@ function showAdminReports(){
     html+=`<div class="glass report-item"><div class="report-meta"><span>👤 ${r.user}</span><span>${dateStr}</span></div>`;
     html+=`<div class="report-text">${r.text}</div>`;
     if(r.context)html+=`<div class="report-context">${r.context}</div>`;
+    if(r.ref){
+      let refHTML='<div style="margin-top:6px;padding:8px;background:rgba(59,130,246,.1);border-radius:var(--r-sm);font-size:12px">';
+      refHTML+='<strong>🔗 מיקום:</strong> ';
+      if(r.ref.type==='quiz'){
+        refHTML+=`לומדה: ${r.ref.stepTitle||r.ref.stepId} | מפתח: <code>${r.ref.dataKey}</code> | שאלה מס\' ${(r.ref.qIdx||0)+1}`;
+      } else if(r.ref.type==='sim'){
+        refHTML+=`סימולציה: ${r.ref.simCat==='hebrew'?'עברית':'דפ"ר'} | מפתח: <code>${r.ref.simKey}</code> | שאלה מס\' ${(r.ref.qIdx||0)+1}`;
+      } else if(r.ref.type==='flashcard'){
+        refHTML+=`כרטיסיה: ${r.ref.fcSrc==='expr'?'ביטוי':'מילה'} | מפתח: <code>${r.ref.fcSrc}:${r.ref.fcIdx}</code> | "${r.ref.word||''}"`;
+      }
+      refHTML+='</div>';
+      html+=refHTML;
+    }
     html+=`</div>`;
   });
   list.innerHTML=html;
