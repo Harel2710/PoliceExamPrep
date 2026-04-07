@@ -1,0 +1,4 @@
+# Dev tools (don't deploy to GitHub Pages)
+serve-local.bat
+booklet_summary.txt
+.claude/
