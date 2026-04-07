@@ -718,6 +718,7 @@ Google
 <div class="action-card glass" id="lb-btn"><span class="action-icon">🏆</span><div style="flex:1"><span class="action-text">טבלת דירוג</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-reports-btn" style="display:none"><span class="action-icon">📋</span><div style="flex:1"><span class="action-text">פניות משתמשים</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-lb-config-btn" style="display:none"><span class="action-icon">⚙️</span><div style="flex:1"><span class="action-text">הגדרות דירוג</span></div><span class="action-arrow">←</span></div>
+<div class="action-card glass" id="admin-qbank-btn" style="display:none" onclick="showQBank()"><span class="action-icon">📦</span><div style="flex:1"><span class="action-text">מאגר שאלות</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-push-overrides-btn" style="display:none" onclick="pushAllOverrides()"><span class="action-icon">☁️</span><div style="flex:1"><span class="action-text">העלה עריכות לשרת</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="logout-btn"><span class="action-icon">🚪</span><div style="flex:1"><span class="action-text">התנתק</span></div><span class="action-arrow">←</span></div>
 </div>
@@ -768,7 +769,7 @@ Google
 
 <!-- LEADERBOARD -->
 <div id="lb-screen" class="screen">
-<header class="screen-header"><button class="back-btn" onclick="showDash()">→ חזרה</button><h2>🏆 טבלת דירוג</h2></header>
+<header class="screen-header"><h2 style="flex:1;text-align:center">🏆 טבלת דירוג</h2></header>
 <div class="lb-filters" id="lb-filters"></div>
 <div class="lb-sub-filters" id="lb-sub-filters"></div>
 <div class="lb-container"><div id="lb-list" class="lb-list"></div></div>
@@ -782,10 +783,12 @@ Google
 
 <!-- BOOST SELECTION -->
 <div id="boost-screen" class="screen">
-<header class="screen-header"><h2 style="flex:1;text-align:center">⚡ בוסט 5 דקות</h2></header>
+<header class="screen-header"><h2 style="flex:1;text-align:center">⚡ תרגול מהיר</h2></header>
 <div class="selection-content">
-<div class="selection-card glass" id="boost-heb"><h3>בוסט עברית ⚡</h3><p>10 שאלות אקראיות מכל חומר העברית</p></div>
-<div class="selection-card glass" id="boost-dpr"><h3>בוסט דפ"ר ⚡</h3><p>10 שאלות אקראיות מכל חומר הדפ"ר</p></div>
+<div class="selection-card glass" id="boost-heb"><h3>בוסט עברית ⚡</h3><p>10 שאלות אקראיות | 5 דקות</p></div>
+<div class="selection-card glass" id="boost-dpr"><h3>בוסט דפ"ר ⚡</h3><p>10 שאלות אקראיות | 8 דקות</p></div>
+<div style="width:100%;border-top:1px solid var(--brd);margin:8px 0"></div>
+<div class="selection-card glass" onclick="startFlashcards()"><h3>🃏 כרטיסיות לימוד</h3><p>תרגול מילים וביטויים בכרטיסיות</p></div>
 </div>
 </div>
 
@@ -878,6 +881,14 @@ Google
 </div>
 
 <!-- ADMIN REPORTS -->
+<div id="qbank-screen" class="screen">
+<header class="screen-header"><button class="back-btn" id="qbank-back-btn" onclick="showDash()">→ חזרה</button><h2>📦 מאגר שאלות</h2></header>
+<div style="padding:14px 12px">
+<input type="text" id="qbank-search" placeholder="חיפוש שאלה..." dir="rtl" oninput="filterQBank()" style="width:100%;padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--brd);background:var(--card2);color:var(--txt);font-size:13px;font-family:var(--font);margin-bottom:12px;box-sizing:border-box">
+<div id="qbank-body"></div>
+</div>
+</div>
+
 <div id="admin-reports-screen" class="screen">
 <header class="screen-header"><button class="back-btn" onclick="showDash()">→ חזרה</button><h2>📋 פניות משתמשים</h2></header>
 <div style="padding:14px 12px" id="admin-reports-list"></div>
@@ -889,7 +900,7 @@ Google
 <nav id="tab-bar" class="tab-bar" style="display:none">
 <div class="tab-item active" data-tab="path" onclick="switchTab('path')"><span class="tab-icon">📚</span><span class="tab-label">מסלול הלמידה</span></div>
 <div class="tab-item" data-tab="boost" onclick="switchTab('boost')"><span class="tab-icon">⚡</span><span class="tab-label">תרגול מהיר</span></div>
-<div class="tab-item" data-tab="flashcards" onclick="switchTab('flashcards')"><span class="tab-icon">🃏</span><span class="tab-label">כרטיסיות לימוד</span></div>
+<div class="tab-item" data-tab="leaderboard" onclick="switchTab('leaderboard')"><span class="tab-icon">🏆</span><span class="tab-label">טבלת דירוג</span></div>
 <div class="tab-item" data-tab="analytics" onclick="switchTab('analytics')"><span class="tab-icon">📊</span><span class="tab-label">ניתוח ביצועים</span></div>
 <div class="tab-item" data-tab="more" onclick="switchTab('more')"><span class="tab-icon">☰</span><span class="tab-label">עוד</span></div>
 </nav>
@@ -952,17 +963,17 @@ const PATH=[
   {id:'intro',type:'lesson',cat:'general',title:'מבוא - הכנה למבחנים',icon:'📋',desc:'מבנה המבחן, ציונים וטיפים'},
   // === מסלול עברית ===
   {id:'level_sim_heb',type:'sim',cat:'hebrew',title:'מבחן רמה עברית',icon:'📝',desc:'סימולציה למיפוי רמתך בעברית',simCat:'hebrew',simKey:'level'},
-  {id:'vocab',type:'lesson',cat:'hebrew',title:'אוצר מילים ומילים דומות',icon:'📖',desc:'רשימת מילים, מילים דומות וביטויים'},
+  {id:'vocab',type:'lesson',cat:'hebrew',title:'רשימת אוצר מילים ומילים דומות',icon:'📖',desc:'רשימת מילים, מילים דומות וביטויים'},
   {id:'heb_ex1',type:'quiz',cat:'hebrew',title:'תרגול עברית 1',icon:'✏️',desc:'אביון, אוושה, אצטבא, אשתקד, בגפו, בדיעבד',dataKey:'ex1'},
   {id:'heb_ex2',type:'quiz',cat:'hebrew',title:'תרגול עברית 2',icon:'✏️',desc:'גהר, בעתה, גוויה, גשמי, גילופין, דופי',dataKey:'ex2'},
   {id:'heb_ex3',type:'quiz',cat:'hebrew',title:'תרגול עברית 3',icon:'✏️',desc:'הסלמה, התאחה, התבוללות, התגודדות, התחוור',dataKey:'ex3'},
   {id:'heb_ex4',type:'quiz',cat:'hebrew',title:'תרגול עברית 4',icon:'✏️',desc:'כסיות, כמיהה, חרף, יהירות, חוצץ',dataKey:'ex4'},
   {id:'heb_ex5',type:'quiz',cat:'hebrew',title:'תרגול עברית 5',icon:'✏️',desc:'כתישה, לאלתר, כסיל, להונות, לדחוק, להדחיק',dataKey:'ex5'},
   {id:'heb_ex6',type:'quiz',cat:'hebrew',title:'תרגול עברית 6',icon:'✏️',desc:'רובד, טופינים, שכיחות, קצף, תורפה, שגגה',dataKey:'ex6'},
-  {id:'expr_learn',type:'lesson',cat:'hebrew',title:'ביטויים ומילים דומות',icon:'💬',desc:'40 ביטויים ומילים דומות לתרגול'},
+  {id:'expr_learn',type:'lesson',cat:'hebrew',title:'הסבר ביטויים ומילים דומות',icon:'💬',desc:'40 ביטויים ומילים דומות לתרגול'},
   {id:'expr_ex1',type:'quiz',cat:'hebrew',title:'תרגול ביטויים 1',icon:'✏️',desc:'15 שאלות על ביטויים',dataKey:'expr1'},
   {id:'expr_ex2',type:'quiz',cat:'hebrew',title:'תרגול ביטויים 2',icon:'✏️',desc:'8 שאלות התאמה',dataKey:'expr2'},
-  {id:'word_match',type:'quiz',cat:'hebrew',title:'התאמת מילים להגדרות',icon:'🔗',desc:'28 שאלות התאמה',dataKey:'wordMatch'},
+  {id:'word_match',type:'quiz',cat:'hebrew',title:'תרגול מילים ומשמעותם',icon:'🔗',desc:'28 שאלות התאמה',dataKey:'wordMatch'},
   {id:'opposites',type:'quiz',cat:'hebrew',title:'תרגול הפכים',icon:'🔄',desc:'23 זוגות הפכים',dataKey:'opposites'},
   {id:'comprehension',type:'quiz',cat:'hebrew',title:'הבנת הנקרא',icon:'📰',desc:'15 שאלות הבנה',dataKey:'comprehension'},
   {id:'comprehension2',type:'quiz',cat:'hebrew',title:'הבנת הנקרא 2',icon:'📰',desc:'שאלות הבנה נוספות',dataKey:'comprehension2'},
@@ -971,23 +982,24 @@ const PATH=[
   {id:'final_sim_heb',type:'sim',cat:'hebrew',title:'מבחן סיום - עברית',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'hebrew',simKey:'final'},
   // === מסלול דפ"ר ===
   {id:'level_sim_dpr',type:'sim',cat:'dpr',title:'מבחן רמה דפ"ר',icon:'📝',desc:'סימולציה למיפוי רמתך בדפ"ר',simCat:'dpr',simKey:'level'},
-  {id:'instr_learn',type:'lesson',cat:'dpr',title:'מילוי הוראות - הסבר',icon:'📋',desc:'5 סוגי שאלות, טיפים ודוגמאות'},
-  {id:'instr_ex1',type:'quiz',cat:'dpr',title:'תרגול מילוי הוראות 1',icon:'✏️',desc:'שאלות מילוי הוראות',dataKey:'instr1'},
-  {id:'dict_ex',type:'quiz',cat:'dpr',title:'תרגול מילון והוראות',icon:'📖',desc:'שאלות סדר אלפביתי והוראות',dataKey:'dictEx'},
+  {id:'instr_learn',type:'lesson',cat:'dpr',title:'הסבר מילוי הוראות',icon:'📋',desc:'5 סוגי שאלות, טיפים ודוגמאות'},
+  {id:'instr_ex1',type:'quiz',cat:'dpr',title:'תרגול מילוי הוראות',icon:'✏️',desc:'שאלות מילוי הוראות',dataKey:'instr1'},
+  {id:'dict_ex',type:'quiz',cat:'dpr',title:'תרגול הוראות ומילון',icon:'📖',desc:'שאלות סדר אלפביתי והוראות',dataKey:'dictEx'},
   {id:'dict_practice',type:'quiz',cat:'dpr',title:'תרגול מילון - מי קודם?',icon:'🔤',desc:'33 שאלות סדר מילוני',dataKey:'dictPractice'},
   {id:'compass_ex',type:'quiz',cat:'dpr',title:'תרגול מצפן',icon:'🧭',desc:'8 שאלות כיוונים',dataKey:'compass'},
-  {id:'instr_test',type:'quiz',cat:'dpr',title:'מבחן מילוי הוראות מקיף',icon:'📝',desc:'18 שאלות מגוונות',dataKey:'instrTest'},
-  {id:'seq_learn',type:'lesson',cat:'dpr',title:'סדרות - הסבר',icon:'📋',desc:'5 סוגי סדרות ודוגמאות'},
-  {id:'seq_ex3',type:'quiz',cat:'dpr',title:'תרגול סדרות 3',icon:'🔢',desc:'39 שאלות סדרות',dataKey:'seq3'},
-  {id:'seq_ex4',type:'quiz',cat:'dpr',title:'תרגול סדרות 4',icon:'🔢',desc:'49 שאלות סדרות',dataKey:'seq4'},
-  {id:'seq_ex5',type:'quiz',cat:'dpr',title:'תרגול סדרות 5',icon:'🔢',desc:'20 שאלות סדרות',dataKey:'seq5'},
-  {id:'seq_ex6',type:'quiz',cat:'dpr',title:'תרגול סדרות 6',icon:'🔢',desc:'12 שאלות סדרות',dataKey:'seq6'},
-  {id:'seq_ex7',type:'quiz',cat:'dpr',title:'תרגול סדרות 7',icon:'🔢',desc:'20 שאלות סדרות',dataKey:'seq7'},
-  {id:'seq_ex8',type:'quiz',cat:'dpr',title:'תרגול סדרות 8',icon:'🔢',desc:'20 שאלות סדרות',dataKey:'seq8'},
-  {id:'shapes_learn',type:'lesson',cat:'dpr',title:'צורות - הסבר',icon:'📋',desc:'5 סוגי דפוסים צורניים'},
+  {id:'instr_test',type:'quiz',cat:'dpr',title:'תרגול מילוי הוראות מקיף',icon:'📝',desc:'18 שאלות מגוונות',dataKey:'instrTest'},
+  {id:'seq_learn',type:'lesson',cat:'dpr',title:'הסבר סדרות',icon:'📋',desc:'5 סוגי סדרות ודוגמאות'},
+  {id:'seq_ex3',type:'quiz',cat:'dpr',title:'תרגול סדרות',icon:'🔢',desc:'39 שאלות סדרות',dataKey:'seq3'},
+  {id:'seq_ex4',type:'quiz',cat:'dpr',title:'תרגול סדרות 2',icon:'🔢',desc:'49 שאלות סדרות',dataKey:'seq4'},
+  {id:'seq_ex5',type:'quiz',cat:'dpr',title:'תרגול סדרות 3',icon:'🔢',desc:'20 שאלות סדרות',dataKey:'seq5'},
+  {id:'seq_ex6',type:'quiz',cat:'dpr',title:'תרגול סדרות 4',icon:'🔢',desc:'12 שאלות סדרות',dataKey:'seq6'},
+  {id:'seq_ex7',type:'quiz',cat:'dpr',title:'תרגול סדרות 5',icon:'🔢',desc:'20 שאלות סדרות',dataKey:'seq7'},
+  {id:'seq_ex8',type:'quiz',cat:'dpr',title:'תרגול סדרות 6',icon:'🔢',desc:'20 שאלות סדרות',dataKey:'seq8'},
+  {id:'shapes_learn',type:'lesson',cat:'dpr',title:'הסבר צורות',icon:'📋',desc:'5 סוגי דפוסים צורניים'},
   {id:'shapes_ex',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 1',icon:'🔷',desc:'שאלות על לוגיקה צורנית',dataKey:'shapes'},
   {id:'shapes_ex2',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 2',icon:'🔶',desc:'המשך שאלות דפוסים צורניים',dataKey:'shapes2'},
   {id:'shapes_ex3',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 3',icon:'🔷',desc:'שאלות מתקדמות בלוגיקה צורנית',dataKey:'shapes3'},
+  {id:'shapes_ex4',type:'quiz',cat:'dpr',title:'תרגול צורות 4',icon:'🔷',desc:'שאלות דפוסים מתקדמים',dataKey:'shapes4'},
   {id:'final_sim_dpr',type:'sim',cat:'dpr',title:'מבחן סיום - דפ"ר',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'dpr',simKey:'final'},
   // === סיכום ===
   {id:'summary',type:'lesson',cat:'general',title:'סיכום',icon:'🎓',desc:'סיכום וטיפים אחרונים לקראת המבחן'},
@@ -1072,16 +1084,16 @@ const newUser=n=>({name:n,points:0,completed:[],totalTime:0,lastActive:Date.now(
 let _syncTimer=null;
 let _firestoreUsersCache=null;
 let _firestoreCacheTime=0;
-const FIRESTORE_CACHE_TTL=120000; // 2 minutes
+const FIRESTORE_CACHE_TTL=300000; // 5 minutes
 let _userCountCache=null;
 let _userCountCacheTime=0;
-const USER_COUNT_CACHE_TTL=300000; // 5 minutes
+const USER_COUNT_CACHE_TTL=600000; // 10 minutes
 
 function syncUserToFirestore(u){
   if(!db||!u)return;
   const docId=u.uid||u.name;
   if(!docId)return;
-  // Debounce: wait 2 seconds of inactivity before syncing
+  // Debounce: wait 10 seconds of inactivity before syncing
   if(_syncTimer)clearTimeout(_syncTimer);
   _syncTimer=setTimeout(()=>{
     const doc={
@@ -1100,9 +1112,11 @@ function syncUserToFirestore(u){
     };
     db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
-      _firestoreUsersCache=null; // invalidate cache
+      _firestoreUsersCache=null;
+      // Update stats counter (1 write instead of querying all users)
+      db.collection('appConfig').doc('stats').set({lastSync:Date.now()},{merge:true}).catch(()=>{});
     }).catch(e=>console.warn('Firestore sync error:',e));
-  },2000);
+  },10000);
 }
 
 function fetchFirestoreLeaderboard(){
@@ -1112,7 +1126,7 @@ function fetchFirestoreLeaderboard(){
     if(_firestoreUsersCache&&(Date.now()-_firestoreCacheTime<FIRESTORE_CACHE_TTL)){
       resolve(_firestoreUsersCache);return;
     }
-    db.collection('users').orderBy('points','desc').limit(100).get().then(snap=>{
+    db.collection('users').orderBy('points','desc').limit(50).get().then(snap=>{
       const users=[];
       snap.forEach(doc=>users.push(doc.data()));
       _firestoreUsersCache=users;
@@ -1159,8 +1173,10 @@ const fmtTime=s=>(0|s/60).toString().padStart(2,'0')+':'+String(s%60).padStart(2
 const confetti=()=>{const c=document.getElementById('confetti-box');c.classList.remove('hidden');const cols=['#ffd700','#ff6b6b','#4ecdc4','#45b7d1','#96ceb4','#ff9ff3'];for(let i=0;i<50;i++){const p=document.createElement('div');p.className='confetti-piece';p.style.left=Math.random()*100+'%';p.style.background=cols[0|Math.random()*cols.length];p.style.animationDelay=Math.random()*1.5+'s';p.style.animationDuration=(2+Math.random()*2)+'s';p.style.borderRadius=Math.random()>.5?'50%':'2px';p.style.width=(5+Math.random()*7)+'px';p.style.height=p.style.width;c.appendChild(p)}setTimeout(()=>{c.innerHTML='';c.classList.add('hidden')},4000)};
 
 // ===== TIME TRACKING =====
+let _timeTrackCounter=0;
 function startTimeTracking(){
   sessionStart=Date.now();
+  _timeTrackCounter=0;
   if(timeTracker)clearInterval(timeTracker);
   timeTracker=setInterval(()=>{
     if(!user)return;
@@ -1169,7 +1185,10 @@ function startTimeTracking(){
     if(!user.dailyTimePoints)user.dailyTimePoints={};
     if(!user.dailyTimePoints[today])user.dailyTimePoints[today]=0;
     if(user.dailyTimePoints[today]<60){user.points+=2;user.dailyTimePoints[today]+=2}
-    saveUser(user);
+    _timeTrackCounter++;
+    // Save locally every minute, sync to Firestore every 5 minutes
+    const us=getUsers();const key=user.uid||user.name;us[key]=user;saveUsers(us);
+    if(_timeTrackCounter>=5){_timeTrackCounter=0;syncUserToFirestore(user)}
   },60000);
 }
 
@@ -1220,8 +1239,24 @@ function emailRegister(){
     else errEl.textContent='שגיאה: '+(err.message||err.code);
   });
 }
+const THREE_MONTHS=90*24*60*60*1000;
+function checkInactivityReset(u){
+  if(!u||!u.lastActive||u.isAdmin)return false;
+  const elapsed=Date.now()-u.lastActive;
+  if(elapsed>THREE_MONTHS&&(u.points||0)>0){
+    // Reset progress, keep identity
+    u.points=0;
+    u.completed=[];
+    u.quizResults={};
+    u.totalTime=0;
+    u.dailyTimePoints={};
+    u.boostCount=0;
+    return true;
+  }
+  return false;
+}
+
 function enterApp(uid,displayName,email){
-  // Load global overrides first, then proceed
   loadGlobalOverrides(()=>{
     let u=getUser(uid);
     if(!u){
@@ -1233,11 +1268,15 @@ function enterApp(uid,displayName,email){
     u.uid=uid;
     if(email)u.email=email;
     if(!u.quizResults)u.quizResults={};
+    const wasReset=checkInactivityReset(u);
     u.lastActive=Date.now();
     u.firebaseUid=uid;
     const finishEntry=()=>{
       user=u;saveUser(user);
       localStorage.setItem('pApp_last',uid);
+      if(wasReset){
+        toast('עברו 3 חודשים - ההתקדמות אופסה. בהצלחה!');
+      }
       if(!u.profile){
         document.getElementById('profile-back-btn').style.display='none';
         showScreen('profile-screen');
@@ -1364,7 +1403,7 @@ function switchTab(tab){
   switch(tab){
     case 'path':showDash();break;
     case 'boost':showScreen('boost-screen');break;
-    case 'flashcards':startFlashcards();break;
+    case 'leaderboard':showLB();break;
     case 'analytics':showAnalytics();break;
     case 'more':showMore();break;
   }
@@ -1387,6 +1426,7 @@ function showMore(){
   document.getElementById('admin-reports-btn').style.display=user.isAdmin?'flex':'none';
   document.getElementById('admin-lb-config-btn').style.display=user.isAdmin?'flex':'none';
   document.getElementById('admin-push-overrides-btn').style.display=user.isAdmin?'flex':'none';
+  document.getElementById('admin-qbank-btn').style.display=user.isAdmin?'flex':'none';
   // Profile display
   const pDisp=document.getElementById('profile-display-content');
   const pCard=document.getElementById('profile-display');
@@ -1447,32 +1487,22 @@ function getBoostCount(){
 }
 
 function getTotalUserCount(){
-  const local=Object.keys(getUsers()).length;
   const el=document.getElementById('h-user-count');
   const liveEl=document.getElementById('h-live-count');
+  const local=Object.keys(getUsers()).length;
   if(el)el.textContent=local;
   if(liveEl)liveEl.textContent='0';
-  // Use cache to avoid excessive Firestore reads
-  if(_userCountCache&&(Date.now()-_userCountCacheTime<USER_COUNT_CACHE_TTL)){
-    if(el)el.textContent=_userCountCache.total;
-    if(liveEl)liveEl.textContent=_userCountCache.live;
-    return;
-  }
-  if(db){
-    db.collection('users').orderBy('lastActive','desc').limit(300).get().then(snap=>{
-      const merged=new Set(Object.keys(getUsers()));
-      let liveCount=0;
-      const fiveMinAgo=Date.now()-5*60*1000;
-      snap.forEach(doc=>{
-        merged.add(doc.id);
-        const d=doc.data();
-        if(d.lastActive&&d.lastActive>fiveMinAgo)liveCount++;
-      });
-      if(el)el.textContent=merged.size;
-      if(liveEl)liveEl.textContent=liveCount;
-      _userCountCache={total:merged.size,live:liveCount};
-      _userCountCacheTime=Date.now();
-    }).catch(()=>{});
+  // Use cached leaderboard data for counts (0 extra reads!)
+  if(_firestoreUsersCache&&_firestoreUsersCache.length>0){
+    const merged=new Set(Object.keys(getUsers()));
+    let liveCount=0;
+    const fiveMinAgo=Date.now()-5*60*1000;
+    _firestoreUsersCache.forEach(u=>{
+      if(u.uid)merged.add(u.uid);
+      if(u.lastActive&&u.lastActive>fiveMinAgo)liveCount++;
+    });
+    if(el)el.textContent=merged.size;
+    if(liveEl)liveEl.textContent=liveCount;
   }
 }
 
@@ -1519,7 +1549,7 @@ function renderPath(){
     'spelling':'🔍','spelling2':'🔍','instr_learn':'📐','instr_ex1':'⚙️','dict_ex':'📓','dict_practice':'🔤',
     'compass_ex':'🧭','instr_test':'📝','seq_learn':'🔢','seq_ex3':'🧮','seq_ex4':'📊',
     'seq_ex5':'🎯','seq_ex6':'💡','seq_ex7':'⚡','seq_ex8':'🏅','shapes_learn':'🔷',
-    'shapes_ex':'🔶','shapes_ex2':'🔷','shapes_ex3':'🔶',
+    'shapes_ex':'🔶','shapes_ex2':'🔷','shapes_ex3':'🔶','shapes_ex4':'🔷',
     'level_sim_heb':'📝','level_sim_dpr':'📝','final_sim_heb':'🏆','final_sim_dpr':'🏆',
     'summary':'🎓'
   };
@@ -1700,67 +1730,150 @@ function getLessonHTML(id){
 <p>ביטויים נפוצים שכדאי להכיר:</p>
 <div id="exprGrid"></div></div>`,
 
-    expr_learn:`<div class="lesson-card glass"><h3>ביטויים ומילים דומות</h3>
-<p>בחלק זה נתרגל ביטויים ומילים דומות שלמדנו.</p>
-<div class="tip">שים לב: ביטויים רבים הם מטאפוריים - המשמעות שלהם אינה מילולית!</div>
-<p><strong>דוגמאות:</strong></p>
-<div class="example">"יד רוחצת יד" = אנשים שעוזרים זה לזה ומגנים זה על זה</div>
-<div class="example">"על ראש הגנב בוער הכובע" = מי שאשם מגלה את עצמו</div>
-<div class="example">"אל תסתכל בקנקן אלא במה שיש בתוכו" = אל תשפוט לפי מראה חיצוני</div></div>`,
+    expr_learn:`<div class="lesson-card glass"><h3>מבוא - ביטויים ומילים דומות</h3>
+<p>ביטויים רבים בעברית הם <strong>מטאפוריים</strong> - המשמעות שלהם אינה מילולית. יש לזהות את המשמעות האמיתית מתוך ההקשר.</p>
+<div class="tip">שימו לב לביטויים שנראים דומים אך שונים לחלוטין במשמעותם! קראו את כל האפשרויות לפני שבוחרים תשובה.</div></div>
+<div class="lesson-card glass"><h3>ביטויים חשובים</h3>
+<p>ביטויים נפוצים שמופיעים במבחן ומשמעותם:</p>
+<div class="example"><strong>"יד רוחצת יד"</strong> = אנשים שעוזרים זה לזה ומגנים זה על זה</div>
+<div class="example"><strong>"על ראש הגנב בוער הכובע"</strong> = מי שאשם מגלה את עצמו</div>
+<div class="example"><strong>"אל תסתכל בקנקן אלא במה שיש בתוכו"</strong> = אל תשפוט לפי מראה חיצוני</div>
+<div class="example"><strong>"אין זה מן התימה"</strong> = זה לא מפתיע</div>
+<div class="example"><strong>"הוגה דעות"</strong> = אדם בעל מחשבות ורעיונות מקוריים</div>
+<div class="example"><strong>"בהיסח הדעת"</strong> = בחוסר תשומת לב, בלי לשים לב</div>
+<div class="example"><strong>"אוזניים ערלות"</strong> = אוזניים לא קשובות</div>
+<div class="example"><strong>"אבד עליו הכלח"</strong> = התיישן מאוד, כבר לא רלוונטי</div>
+<div class="example"><strong>"מרה שחורה"</strong> = דיכאון</div>
+<div class="example"><strong>"החלק הארי"</strong> = החלק העיקרי, הגדול ביותר</div></div>
+<div class="lesson-card glass"><h3>מילים דומות</h3>
+<p>מילים שנראות דומות אך שונות לחלוטין במשמעותן. חשוב להבחין ביניהן:</p>
+<div class="example"><strong>גער ≠ גהר</strong> — גער = נזף, העיר הערה חריפה | גהר = התכופף קדימה</div>
+<div class="example"><strong>ציתת ≠ ציטט</strong> — ציתת = האזין בסתר | ציטט = חזר על דברי אדם אחר</div>
+<div class="example"><strong>עיכב ≠ עקב</strong> — עיכב = עצר, גרם לעיכוב | עקב = עקב אחרי מישהו</div>
+<div class="example"><strong>סותרת ≠ סטירה</strong> — סותרת = מנוגדת, הפוכה | סטירה = מכה בפנים</div>
+<div class="example"><strong>תובעת ≠ תבעה</strong> — הקשר שונה: תובעת = הקשר משפטי | תבעה = דרישה כללית</div>
+<div class="example"><strong>להניא ≠ להניע</strong> — להניא = למנוע, לשכנע שלא | להניע = לגרום לפעולה, לעודד</div></div>
+<div class="lesson-card glass"><h3>טיפים לפתרון שאלות ביטויים</h3>
+<div class="tip">קראו את כל האפשרויות לפני שבוחרים תשובה - לפעמים יש שתי אפשרויות שנראות נכונות.</div>
+<div class="tip">שימו לב להקשר המשפט - אותו ביטוי יכול לקבל משמעות שונה בהקשרים שונים.</div>
+<div class="tip">ביטויים עשויים להופיע בצורות שונות (למשל "רחצת יד" במקום "יד רוחצת יד") - הבינו את העיקרון ולא רק את הניסוח המדויק.</div></div>`,
 
-    instr_learn:`<div class="lesson-card glass"><h3>מילוי הוראות</h3>
-<p>בחלק זה של המבחן נבדקת יכולתך לעקוב אחר הוראות מורכבות.</p>
-<p><strong>5 סוגי שאלות:</strong></p></div>
+    instr_learn:`<div class="lesson-card glass"><h3>מילוי הוראות - סקירה כללית</h3>
+<p>בחלק זה של המבחן נבדקת יכולתך לעקוב אחר הוראות מורכבות ולבצע אותן במדויק.</p>
+<p><strong>5 סוגי שאלות | 19 שאלות | 12 דקות</strong></p>
+<div class="tip">הזמן קצוב - חשוב לעבוד מהר ומדויק. הכינו טיוטה עם א"ב ושושנת רוחות לפני תחילת הזמן!</div></div>
 <div class="lesson-card glass"><h3>1. ביצוע הוראות</h3>
-<p>סדרת משימות לביצוע: חשבון פשוט, ספירת אותיות, הבנת הוראות.</p>
-<div class="example">דוגמה: אותיות עם מספרים מתחת - מצא את האות מעל תוצאת חיבור כל המספרים האי-זוגיים.</div></div>
+<p>סדרת משימות לביצוע: חשבון פשוט, ספירת אותיות, הבנת הוראות מורכבות. יש לקרוא כל מילה בקפידה.</p>
+<div class="example"><strong>דוגמה:</strong> ארבעה שמות: עמרם, שאול, גילי, ששון. מהי האות השלישית בשם שאין בו אותיות חוזרות?<br><strong>פתרון:</strong> עמרם - יש מ פעמיים. גילי - יש י פעמיים. ששון - יש ש פעמיים. שאול - אין אותיות חוזרות! האות השלישית = <strong>ו</strong></div>
+<div class="example"><strong>דוגמה:</strong> באיזה מספר הספרה 7 במקום המאות, 6 במקום האחדות ו-3 במקום העשרות?<br><strong>פתרון:</strong> מאות=7, עשרות=3, אחדות=6 → <strong>736</strong></div>
+<div class="tip">קראו את ההוראות בקפידה, מילה אחר מילה. טעות קטנה בקריאה = תשובה שגויה!</div></div>
 <div class="lesson-card glass"><h3>2. חיפוש במילון</h3>
-<p>קביעה איזו מילה מופיעה ראשונה בסדר אלף-ביתי.</p>
-<div class="tip">טיפ: כתוב את הא"ב על דף טיוטה <strong>לפני</strong> שהמבחן המתוזמן מתחיל!</div></div>
+<p>קביעה איזו מילה מופיעה ראשונה או אחרונה בסדר אלף-ביתי (כמו במילון).</p>
+<div class="example"><strong>דוגמה:</strong> האם "דקדקנות" מופיעה לפני "דלילות" במילון?<br><strong>פתרון:</strong> שתיהן מתחילות ב-ד. האות השנייה: ק מול ל. ק מופיעה אחרי ל בא"ב → "דלילות" לפני "דקדקנות" → <strong>לא</strong>, דקדקנות לא מופיעה לפני.</div>
+<div class="tip">כתבו את כל אותיות הא"ב על טיוטה לפני שהזמן מתחיל! זה חוסך זמן יקר.</div>
+<div class="tip">בדקו אות אות משמאל לימין - ברגע שמצאתם אות שונה, היא קובעת את הסדר.</div></div>
 <div class="lesson-card glass"><h3>3. קריאת נתונים</h3>
-<p>שאלות על טבלאות ותרשימים - קרא את הנתונים בדקדקנות.</p></div>
+<p>שאלות על <strong>טבלאות</strong>, <strong>גרפי עמודות</strong> ו<strong>תרשימים</strong>. יש לקרוא את הנתונים בדקדקנות רבה.</p>
+<div class="tip">שימו לב לכותרות העמודות והשורות בטבלאות - לפעמים הסדר לא אינטואיטיבי.</div>
+<div class="tip">בגרפים - בדקו את קנה המידה של הצירים לפני שקוראים ערכים.</div>
+<div class="example"><strong>דוגמה:</strong> בטבלה של מכירות חודשיות, אם שואלים "באיזה חודש המכירות הכי גבוהות" - קראו את כל הערכים, אל תסתמכו על מבט מהיר.</div></div>
 <div class="lesson-card glass"><h3>4. שאלות מצפן</h3>
-<p>בהינתן כיוונים ומרחקים, קבע את הכיוון הסופי.</p>
-<div class="tip">טיפ: צייר שושנת רוחות על דף טיוטה ועקוב עם קווים קטנים שווים!</div>
-<div class="example">דוגמה: הלכת 2 ק"מ מזרחה, 2 ק"מ צפונה, 4 ק"מ מערבה = הכיוון: צפון-מערב</div></div>
-<div class="lesson-card glass"><h3>5. טיפים לחיסכון בזמן</h3>
-<ul><li>עבוד בשיטתיות</li>
-<li>אל תבזבז זמן על חישובים מיותרים</li>
-<li>צייר שושנת רוחות וכתוב א"ב על טיוטה לפני תחילת הזמן</li></ul></div>`,
+<p>בהינתן כיוונים ומרחקים, קבעו את הכיוון הסופי ביחס לנקודת ההתחלה.</p>
+<p><strong>שלב אחר שלב:</strong></p>
+<ul><li>ציירו שושנת רוחות על הטיוטה (צפון למעלה, <strong>מזרח משמאל</strong> כי כותבים בעברית מימין לשמאל)</li>
+<li>כל הליכה ישרה - סמנו בקו על הטיוטה</li>
+<li>בסוף - בדקו איפה אתם ביחס לנקודת ההתחלה</li></ul>
+<div class="example"><strong>דוגמה:</strong> הלכת 3 ק"מ מערבה, 4 ק"מ מזרחה, 3 ק"מ דרומה. מה הכיוון?<br><strong>פתרון:</strong> מערב-מזרח: 3 מערבה + 4 מזרחה = 1 מזרחה. צפון-דרום: 3 דרומה. → הכיוון: <strong>דרום-מזרח</strong></div>
+<div class="tip">ציירו כל שלב על הטיוטה - אל תנסו לפתור בראש!</div></div>
+<div class="lesson-card glass"><h3>5. סדרי עדיפויות וניהול זמן</h3>
+<p>עם 19 שאלות ו-12 דקות בלבד, ניהול הזמן הוא קריטי:</p>
+<ul><li><strong>התחילו מהשאלות הקלות</strong> - ביצוע הוראות וקריאת נתונים בדרך כלל מהירות יותר</li>
+<li><strong>אל תבזבזו זמן</strong> על שאלת מצפן מסובכת - דלגו וחזרו אליה בסוף</li>
+<li><strong>הכינו טיוטה</strong> עם א"ב מלא ושושנת רוחות לפני תחילת הזמן - זה חוקי ומומלץ!</li>
+<li><strong>עבדו בשיטתיות</strong> - קראו כל שאלה פעמיים לפני שעונים</li></ul>
+<div class="tip">חישוב: כ-38 שניות לשאלה. אם שאלה לוקחת יותר מדקה - דלגו!</div></div>`,
 
     seq_learn:`<div class="lesson-card glass"><h3>סדרות מספריות</h3>
 <p>בשאלות אלה עליך למצוא את החוק שלפיו בנויה הסדרה ולמצוא את המספר הבא/החסר.</p>
 <p><strong>5 סוגי סדרות:</strong></p></div>
 <div class="lesson-card glass"><h3>סוג 1: פעולה אחת קבועה</h3>
-<p>הפרש/מכפלה קבועים בין כל מספר למספר הבא.</p>
-<div class="example">1, 8, 15, 22, 29... -> +7 בכל שלב</div>
-<div class="example">243, 81, 27, 9, 3... -> /3 בכל שלב</div></div>
+<p>הפרש קבוע או מכפלה/חילוק קבועים בין כל מספר למספר הבא.</p>
+<div class="example">1, 8, 15, 22, 29... → <strong>+7</strong> בכל שלב</div>
+<div class="example">243, 81, 27, 9, 3... → <strong>/3</strong> בכל שלב</div>
+<div class="example">232, 191, ___, 109, 68, 27 → <strong>-41</strong> בכל שלב (התשובה: 150)</div>
+<div class="tip">טיפ: חשבו את ההפרש בין שני מספרים סמוכים. אם הוא קבוע - מצאתם את החוק!</div></div>
 <div class="lesson-card glass"><h3>סוג 2: שתי פעולות מתחלפות</h3>
-<p>שתי פעולות שונות לסירוגין.</p>
-<div class="example">5, 25, 20, 100, 95... -> x5, -5, x5, -5</div>
-<div class="example">4, 8, 12, 24, 28, 56... -> x2, +4, x2, +4</div>
-<div class="tip">אפשרי גם: שתי פעולות על אותו שלב: 110, 54, 26, 12... -> /2 ואז -1</div></div>
+<p>שתי פעולות שונות לסירוגין, או שתי פעולות על אותו שלב.</p>
+<div class="example">5, 25, 20, 100, 95... → <strong>x5, -5, x5, -5</strong></div>
+<div class="example">4, 8, 12, 24, 28, 56... → <strong>x2, +4, x2, +4</strong></div>
+<div class="example">80, 160, 40, 80, 20, 40, 10... → <strong>x2, /4</strong> לסירוגין</div>
+<div class="tip">אפשרי גם: שתי פעולות על אותו שלב: 110, 54, 26, 12... → /2 ואז -1</div>
+<div class="example"><strong>מתקדם - מכפיל משתנה:</strong> 7, 15, 46, 185... → x2+1, x3+1, x4+1 (המכפיל עצמו גדל בכל שלב!)</div></div>
 <div class="lesson-card glass"><h3>סוג 3: סדרת הפרשים</h3>
-<p>ההפרשים בין המספרים עצמם יוצרים סדרה.</p>
-<div class="example">1, 2, 5, 14, 41... -> הפרשים: 1, 3, 9, 27 (x3)</div></div>
+<p>ההפרשים בין המספרים עצמם יוצרים סדרה. כתבו את ההפרשים בשורה נפרדת.</p>
+<div class="example">1, 2, 5, 14, 41... → הפרשים: 1, 3, 9, 27 → <strong>x3</strong></div>
+<div class="example">10, 20, 60, 240... → הפרשים: 10, 40, 180 → <strong>x2, x3, x4</strong> (המכפיל עולה ב-1!)</div>
+<div class="tip">אם ההפרשים עצמם לא יוצרים חוק ברור - נסו לחשב הפרשים של ההפרשים (שורה שלישית).</div></div>
 <div class="lesson-card glass"><h3>סוג 4: סכום שני קודמים</h3>
 <p>כל מספר הוא סכום שני המספרים שלפניו (כמו פיבונאצ'י).</p>
-<div class="example">0, 1, 1, 2, 3, 5, 8... -> 0+1=1, 1+1=2, 1+2=3...</div></div>
+<div class="example">0, 1, 1, 2, 3, 5, 8... → 0+1=1, 1+1=2, 1+2=3, 2+3=5...</div>
+<div class="tip">וריאציות אפשריות: סכום שלושה קודמים, או סכום קודמים עם פעולה נוספת.</div></div>
 <div class="lesson-card glass"><h3>סוג 5: שתי סדרות משולבות</h3>
-<p>שתי סדרות נפרדות שמשולבות לסירוגין.</p>
-<div class="example">3, 2, 6, 3, 9... -> סדרה 1: 3,6,9 (+3) / סדרה 2: 2,3 (+1)</div>
-<div class="tip">טיפ: אם הסדרה עולה ויורדת בו-זמנית - כנראה שתי סדרות משולבות!</div></div>`,
+<p>שתי סדרות נפרדות שמשולבות לסירוגין - מספרים במקומות אי-זוגיים שייכים לסדרה אחת, ומספרים במקומות זוגיים לסדרה אחרת.</p>
+<div class="example">3, 2, 6, 3, 9... → סדרה 1: 3, 6, 9 (<strong>+3</strong>) / סדרה 2: 2, 3 (<strong>+1</strong>)</div>
+<div class="example">302, 3, 301, 6, 300, 12... → סדרה 1: 302, 301, 300 (<strong>-1</strong>) / סדרה 2: 3, 6, 12 (<strong>x2</strong>)</div>
+<div class="tip">אם הסדרה עולה ויורדת בו-זמנית, או שהמספרים "קופצים" - כנראה שתי סדרות משולבות! הפרידו אותן.</div></div>
+<div class="lesson-card glass"><h3>טיפ הזהב לסדרות</h3>
+<ul><li>אם יש <strong>קפיצות גדולות</strong> בין המספרים → כנראה <strong>כפל</strong></li>
+<li>אם הסדרה <strong>עולה ויורדת</strong> לסירוגין → כנראה <strong>שתי סדרות משולבות</strong></li>
+<li>אם שום דבר לא עובד → <strong>בדקו הפרשים בין הפרשים</strong> (סדרת הפרשים)</li>
+<li><strong>כתבו על נייר!</strong> אל תנסו לפתור בראש - רשמו את המספרים וההפרשים</li></ul>
+<div class="tip">בדקו תמיד את התשובה: הציבו את החוק שמצאתם ותוודאו שהוא עובד על כל המספרים בסדרה.</div></div>`,
 
-    shapes_learn:`<div class="lesson-card glass"><h3>צורות ודפוסים</h3>
-<p>בשאלות אלה מוצגים דפוסים צורניים ועליך למצוא את החוקיות.</p>
-<p><strong>5 סוגי דפוסים:</strong></p>
-<ul>
-<li><strong>שילוב צורות</strong> - הנחת שתי צורות זו על זו; חלקים משותפים נשארים, שאר החלקים מתווספים</li>
-<li><strong>היפוכים וסיבובים</strong> - צורה מתהפכת/מסתובבת. בשאלות קשות: גם היפוך וגם סיבוב</li>
-<li><strong>מחיקת חלקים</strong> - מחיקת חלקים משותפים או לא-משותפים בין צורות</li>
-<li><strong>משחקי צבע ודפוס</strong> - צבעים/דפוסים שמתווספים או נמחקים בין הצורות</li>
-<li><strong>פעולות חשבון על צורות</strong> - מספר האלמנטים משתנה לפי חוק מתמטי</li></ul>
-<div class="tip">שאלות הצורות הן ויזואליות ודורשות את התמונות המקוריות מהחוברת. מומלץ לתרגל ישירות מהחוברת.</div></div>`,
+    shapes_learn:`<div class="lesson-card glass"><h3>צורות ודפוסים - סקירה כללית</h3>
+<p>בדומה לסדרות מספריות, גם בשאלות הצורות קיימת <strong>חוקיות חוזרת</strong> שצריך לזהות.</p>
+<p><strong>31 שאלות | 12 דקות</strong></p>
+<p>ניתן לפתור כל שאלה בכמה דרכים. בנוסף, שאלות רבות משלבות שיטות שונות - למשל צורה שמסתובבת ובמקביל משנה צבע.</p>
+<div class="tip">הבינו את סוגי הדפוסים הבסיסיים - רוב השאלות הן שילוב של כמה מהם.</div></div>
+<div class="lesson-card glass"><h3>1. חיבור צורות / הנחה זו על זו</h3>
+<p>כשמניחים שתי צורות אחת על השנייה:</p>
+<ul><li><strong>קווים משותפים</strong> - נשארים כפי שהם</li>
+<li><strong>קווים שאינם משותפים</strong> - מתווספים לתמונה</li></ul>
+<div class="example"><strong>דוגמה:</strong> משולש + ריבוע שחולקים צלע אחת → הצלע המשותפת נשארת, ושאר הצלעות מתחברות ליצירת צורה חדשה</div>
+<div class="tip">דמיינו שאתם מניחים שקף אחד על השני - מה תראו?</div></div>
+<div class="lesson-card glass"><h3>2. היפוכים וסיבובים</h3>
+<p>צורות מסתובבות או מתהפכות בין שלב לשלב:</p>
+<ul><li><strong>סיבוב 90 מעלות</strong> - רבע סיבוב (עם או נגד כיוון השעון)</li>
+<li><strong>סיבוב 180 מעלות</strong> - חצי סיבוב (הצורה הפוכה)</li>
+<li><strong>שיקוף כמראה</strong> - היפוך ימין ↔ שמאל, או למעלה ↔ למטה</li></ul>
+<div class="example"><strong>דוגמה:</strong> חץ שמצביע ימינה → למעלה → שמאלה → למטה = סיבוב 90 מעלות בכל שלב</div>
+<div class="tip">בשאלות מתקדמות: סיבוב + שינוי נוסף (למשל סיבוב + שינוי צבע). בדקו כל מרכיב בנפרד!</div></div>
+<div class="lesson-card glass"><h3>3. משחקי צבעים ודוגמאות</h3>
+<p>צורות מתמלאות, מתרוקנות, או משנות דפוס בין השלבים:</p>
+<ul><li><strong>דפוס מחזורי:</strong> ריק → חצי מלא → מלא → ריק (חוזר מההתחלה)</li>
+<li><strong>מילוי הדרגתי:</strong> כל שלב מתמלא חלק נוסף</li>
+<li><strong>החלפת צבעים:</strong> שחור הופך ללבן ולהיפך</li></ul>
+<div class="example"><strong>דוגמה:</strong> עיגול ריק → עיגול חצי מלא → עיגול מלא → עיגול ריק → חוזר חלילה</div>
+<div class="tip">לפעמים כמה דפוסי צבע פועלים במקביל על אלמנטים שונים באותה צורה. בדקו כל אלמנט בנפרד.</div></div>
+<div class="lesson-card glass"><h3>4. פעולות חשבוניות על צורות</h3>
+<p>מספר האלמנטים בצורה גדל או קטן לפי חוק מתמטי:</p>
+<ul><li><strong>תוספת קבועה:</strong> +1 אלמנט, +2 אלמנטים בכל שלב</li>
+<li><strong>הכפלה:</strong> מספר האלמנטים מוכפל</li>
+<li><strong>סדרה:</strong> 1, 3, 5, 7... אלמנטים (כמו סדרות מספריות!)</li></ul>
+<div class="example"><strong>דוגמה:</strong> צורה עם 2 נקודות → 4 נקודות → 6 נקודות → 8 נקודות = <strong>+2</strong> נקודות בכל שלב</div>
+<div class="tip">ספרו את האלמנטים בכל שלב וכתבו את המספרים - אולי תגלו סדרה מספרית!</div></div>
+<div class="lesson-card glass"><h3>5. כיווני שעון ותמונות מראה</h3>
+<p>עקבו אחרי כיוון התנועה של אלמנטים בתוך הצורה:</p>
+<ul><li><strong>תנועה עם כיוון השעון</strong> - אלמנט זז למיקום הבא בכיוון השעון</li>
+<li><strong>תנועה נגד כיוון השעון</strong> - אלמנט זז למיקום הבא נגד כיוון השעון</li>
+<li><strong>שיקוף אופקי</strong> - כאילו שמים מראה מימין (ימין ↔ שמאל)</li>
+<li><strong>שיקוף אנכי</strong> - כאילו שמים מראה למטה (למעלה ↔ למטה)</li></ul>
+<div class="example"><strong>דוגמה:</strong> נקודה שחורה נמצאת בפינה ימנית עליונה → ימנית תחתונה → שמאלית תחתונה → שמאלית עליונה = תנועה עם כיוון השעון</div></div>
+<div class="lesson-card glass"><h3>6. טיפים לפתרון שאלות צורות</h3>
+<div class="tip"><strong>הסתכלו על הדפוס הכללי</strong> לפני שנכנסים לפרטים - מה הרושם הראשוני?</div>
+<div class="tip"><strong>בדקו מה משתנה</strong> בין צורה לצורה - ומה נשאר קבוע. מה שנשאר קבוע עוזר לזהות את החוק.</div>
+<div class="tip"><strong>נסו כמה חוקיות</strong> וראו מה מתאים. אם סיבוב לא מסביר הכל - אולי יש גם שינוי צבע?</div>
+<div class="tip"><strong>אם קשה - דלגו וחזרו!</strong> עם 31 שאלות ב-12 דקות, כל שאלה צריכה לקחת כ-23 שניות. אל תתקעו.</div></div>`,
 
     summary:`<div class="lesson-card glass"><h3>סיכום והמלצות</h3>
 <p>סיימת את כל מסלול הלמידה! הנה כמה טיפים אחרונים:</p>
@@ -1864,6 +1977,7 @@ function getQuizData(key){
     if(key==='shapes')raw=DPR_DATA.shapes;
     if(key==='shapes2')raw=DPR_DATA.shapes2;
     if(key==='shapes3')raw=DPR_DATA.shapes3;
+    if(key==='shapes4')raw=DPR_DATA.shapes4;
   }
   if(!raw&&typeof EXAM_QUESTIONS!=='undefined'&&key==='examPractice'){
     const all=[];
@@ -1874,7 +1988,14 @@ function getQuizData(key){
     return all.length?applyOverrides(all):null;
   }
   if(!raw)return null;
-  return applyOverrides(tagQuestions(raw,key));
+  let questions=tagQuestions(raw,key);
+  if(key==='spelling'||key==='spelling2'){
+    questions=questions.map(q=>{
+      const newO=[...q.o,'המשפט כתוב נכון'];
+      return {...q,o:newO,a:q.a===-1?newO.length-1:q.a};
+    });
+  }
+  return applyOverrides(questions);
 }
 
 function getBoostQuestions(cat){
@@ -1882,7 +2003,7 @@ function getBoostQuestions(cat){
   if(cat==='hebrew'){
     ['ex1','ex2','ex3','ex4','ex5','ex6','expr1','expr2','wordMatch','opposites','comprehension','comprehension2','spelling','spelling2'].forEach(k=>{const d=getQuizData(k);if(d)all.push(...d)});
   }else{
-    ['instr1','dictEx','dictPractice','compass','instrTest','seq3','seq4','seq5','seq6','seq7','seq8','shapes','shapes2','shapes3'].forEach(k=>{const d=getQuizData(k);if(d)all.push(...d)});
+    ['instr1','dictEx','dictPractice','compass','instrTest','seq3','seq4','seq5','seq6','seq7','seq8','shapes','shapes2','shapes3','shapes4'].forEach(k=>{const d=getQuizData(k);if(d)all.push(...d)});
   }
   return shuffle(all).slice(0,10);
 }
@@ -1893,7 +2014,7 @@ function getSimQuestions(cat){
   if(cat==='hebrew'){
     ['ex1','ex2','ex3','ex4','ex5','ex6','expr1','expr2','wordMatch','opposites','comprehension','comprehension2','spelling','spelling2'].forEach(k=>{const d=getQuizData(k);if(d)all.push(...d)});
   }else{
-    ['instr1','dictEx','dictPractice','compass','instrTest','seq3','seq4','seq5','seq6','seq7','seq8','shapes','shapes2','shapes3'].forEach(k=>{const d=getQuizData(k);if(d)all.push(...d)});
+    ['instr1','dictEx','dictPractice','compass','instrTest','seq3','seq4','seq5','seq6','seq7','seq8','shapes','shapes2','shapes3','shapes4'].forEach(k=>{const d=getQuizData(k);if(d)all.push(...d)});
   }
   return shuffle(all).slice(0,count);
 }
@@ -1981,15 +2102,22 @@ function endQuiz(){
     if(!user.quizResults)user.quizResults={};
     user.quizResults[dataKey]={correct:qCorrect,total:qList.length,lastDate:Date.now()};
   }
-  const compPts=30,timePts=Math.min(Math.floor(elapsed/60)*2,20);
-  const boostBonus=isBoostMode?25:0;
-  const totalPts=compPts+timePts+boostBonus;
+  const mins=Math.floor(elapsed/60);
   const pct=Math.round(qCorrect/qList.length*100);
+  // Anti-farming: minimum 1 minute for any points
+  let compPts=0,timePts=0,boostBonus=0,accuracyPts=0;
+  if(mins>=1){
+    compPts=15;
+    timePts=Math.min(mins*3,25);
+    accuracyPts=Math.round(pct/100*15);
+    boostBonus=isBoostMode?Math.min(mins*4,30):0;
+  }
+  const totalPts=compPts+timePts+accuracyPts+boostBonus;
   document.getElementById('r-emoji').textContent=pct>=80?'🏆':pct>=50?'💪':'📖';
   document.getElementById('r-score').textContent=qCorrect+'/'+qList.length;
   document.getElementById('r-sub').textContent=pct>=80?'מצוין!':pct>=50?'לא רע, המשך לתרגל!':'צריך עוד תרגול';
   document.getElementById('r-comp').textContent='+'+compPts;
-  document.getElementById('r-time').textContent='+'+timePts;
+  document.getElementById('r-time').textContent='+'+(timePts+accuracyPts);
   document.getElementById('r-total').textContent='+'+totalPts;
   user.points+=totalPts;
   if(isBoostMode){
@@ -2025,12 +2153,18 @@ function endQuiz(){
 }
 
 // ===== COMPLETE LESSON =====
+const NO_POINTS_STEPS=['intro','vocab','expr_learn','instr_learn','seq_learn','shapes_learn'];
 function completeStep(step){
-  const pts=20,timePts=Math.min(Math.floor((Date.now()-sessionStart)/60000)*2,10);
-  user.points+=pts+timePts;
   if(!user.completed)user.completed=[];
   if(!user.completed.includes(step.id))user.completed.push(step.id);
-  saveUser(user);toast('שלב הושלם! +'+(pts+timePts)+' נקודות','ach');
+  if(NO_POINTS_STEPS.includes(step.id)){
+    saveUser(user);toast('שלב הושלם!','ach');
+  } else {
+    const mins=Math.floor((Date.now()-sessionStart)/60000);
+    const pts=15,timePts=Math.min(mins*3,15);
+    if(mins<1){saveUser(user);toast('שלב הושלם!','ach');}
+    else{user.points+=pts+timePts;saveUser(user);toast('שלב הושלם! +'+(pts+timePts)+' נקודות','ach');}
+  }
   const _curCat=PATH[curStep]?.cat;
   let _nextIdx=-1;
   for(let j=curStep+1;j<PATH.length;j++){
@@ -2040,7 +2174,7 @@ function completeStep(step){
 }
 
 // ===== LEADERBOARD + CLASSIFICATION =====
-let lbFilter='all',lbSubFilter='';
+let lbFilter='all',lbSubFilter='',lbSubFilter2='';
 
 function showLB(){
   if(!user)return;
@@ -2068,16 +2202,18 @@ function renderLBFilters(){
     subFilters.innerHTML=html;
   }else if(lbFilter==='trainee'){
     const cfg=getLBConfig();
-    let html=`<select onchange="lbSubFilter=this.value;renderLBList()"><option value="">כל הפלוגות/מחזורים</option>`;
-    cfg.traineeCompanies.forEach(c=>{html+=`<option value="company:${c}"${lbSubFilter==='company:'+c?' selected':''}>${c}</option>`});
-    cfg.traineeCohorts.forEach(c=>{html+=`<option value="cohort:${c}"${lbSubFilter==='cohort:'+c?' selected':''}>${c}</option>`});
+    let html=`<select onchange="lbSubFilter=this.value;renderLBList()"><option value="">כל הפלוגות</option>`;
+    cfg.traineeCompanies.forEach(c=>{html+=`<option value="${c}"${lbSubFilter===c?' selected':''}>${c}</option>`});
+    html+=`</select>`;
+    html+=`<select onchange="lbSubFilter2=this.value;renderLBList()"><option value="">כל המחזורים</option>`;
+    cfg.traineeCohorts.forEach(c=>{html+=`<option value="${c}"${lbSubFilter2===c?' selected':''}>${c}</option>`});
     html+=`</select>`;
     subFilters.innerHTML=html;
   }
 }
 
 function setLBFilter(f){
-  lbFilter=f;lbSubFilter='';
+  lbFilter=f;lbSubFilter='';lbSubFilter2='';
   renderLBFilters();renderLBList();
 }
 
@@ -2112,10 +2248,9 @@ function renderLBList(){
       if(lbFilter==='officer'&&lbSubFilter){
         allUsers=allUsers.filter(u=>u.classification&&u.classification.district===lbSubFilter);
       }
-      if(lbFilter==='trainee'&&lbSubFilter){
-        const[key,val]=lbSubFilter.split(':');
-        if(key==='company')allUsers=allUsers.filter(u=>u.classification&&u.classification.company===val);
-        if(key==='cohort')allUsers=allUsers.filter(u=>u.classification&&u.classification.cohort===val);
+      if(lbFilter==='trainee'){
+        if(lbSubFilter)allUsers=allUsers.filter(u=>u.classification&&u.classification.company===lbSubFilter);
+        if(lbSubFilter2)allUsers=allUsers.filter(u=>u.classification&&u.classification.cohort===lbSubFilter2);
       }
     }
     const sorted=allUsers.sort((a,b)=>(b.points||0)-(a.points||0));
@@ -2257,7 +2392,7 @@ function startBoost(cat){
   if(!qs.length){toast('אין שאלות זמינות');return}
   isBoostMode=true;isSimMode=false;
   qList=qs;qIdx=0;qCorrect=0;elapsed=0;
-  boostRemaining=300; // 5 minutes
+  boostRemaining=cat==='dpr'?480:300; // dpr=8min, hebrew=5min
   clearAllTimers();
   timerInt=setInterval(()=>{
     elapsed++;boostRemaining--;
@@ -2466,8 +2601,12 @@ function endSim(){
   });
   const pct=Math.round(correct/qList.length*100);
   const grade=pctToGrade(pct);
-  // Award sim engagement points
-  const simPts=35,simTimePts=Math.min(Math.floor(elapsed/60)*2,20),simTotal=simPts+simTimePts;
+  // Award sim engagement points (time-weighted, min 2 minutes)
+  const simMins=Math.floor(elapsed/60);
+  const simPts=simMins>=2?20:0;
+  const simTimePts=simMins>=2?Math.min(simMins*3,30):0;
+  const simAccPts=simMins>=2?Math.round(pct/100*15):0;
+  const simTotal=simPts+simTimePts+simAccPts;
   if(user){user.points=(user.points||0)+simTotal}
   // Save sim results
   const simKey=window._pathSimKey||('sim_'+simCat);
@@ -2594,7 +2733,7 @@ function findQuestionCat(q){
   for(const k of spellKeys){const d=getQuizData(k);if(d&&d.some(x=>x.q===q.q))return 'כתיב'}
   for(const k of instrKeys){const d=getQuizData(k);if(d&&d.some(x=>x.q===q.q))return 'מילוי הוראות'}
   for(const k of seqKeys){const d=getQuizData(k);if(d&&d.some(x=>x.q===q.q))return 'סדרות'}
-  const shapesKeys=['shapes','shapes2','shapes3'];
+  const shapesKeys=['shapes','shapes2','shapes3','shapes4'];
   for(const k of shapesKeys){const d=getQuizData(k);if(d&&d.some(x=>x.q===q.q))return 'צורות ודפוסים'}
   return simCat==='hebrew'?'עברית':'דפ"ר';
 }
@@ -3038,7 +3177,7 @@ function deleteFlashcard(){
 }
 
 // ===== FLASHCARDS =====
-let fcCards=[],fcIdx=0,fcKnown=0,fcUnknown=0,fcCategory='all';
+let fcCards=[],fcIdx=0,fcKnown=0,fcUnknown=0,fcCategory='all',fcSessionStart=0;
 
 function getFcWords(){
   const ovr=getOverrides();
@@ -3080,7 +3219,7 @@ function startFlashcardSession(cat){
   else cards=[...getFcWords(),...getFcExpr()];
   if(!cards.length){toast('אין כרטיסיות בקטגוריה זו');return}
   fcCards=shuffle(cards);
-  fcIdx=0;fcKnown=0;fcUnknown=0;
+  fcIdx=0;fcKnown=0;fcUnknown=0;fcSessionStart=Date.now();
   document.getElementById('fc-category-picker').style.display='none';
   document.getElementById('fc-session-area').style.display='';
   renderFlashcard();
@@ -3111,20 +3250,161 @@ function endFlashcardSession(){
   if(fcIdx>0 && user){
     if(!user.quizResults)user.quizResults={};
     user.quizResults['flashcards']={correct:fcKnown,total:fcKnown+fcUnknown,lastDate:Date.now()};
-    user.points=(user.points||0)+15;
+    // Time-weighted scoring: heavy time weight, low "knew" click weight
+    const fcMins=Math.floor((Date.now()-fcSessionStart)/60000);
+    const timePts=Math.min(fcMins*5,40); // 5 pts/min, max 40
+    const knewPts=Math.min(Math.floor(fcKnown*0.5),10); // 0.5 pts per "knew", max 10
+    const fcTotal=fcMins>=1?timePts+knewPts:0; // minimum 1 minute for any points
+    if(fcTotal>0)user.points=(user.points||0)+fcTotal;
     saveUser(user);
+    if(fcTotal>0){
+      toast(`כרטיסיות: ${fcKnown}/${fcKnown+fcUnknown} ידעת | +${fcTotal} נקודות (${fcMins} דק')`);
+    } else {
+      toast(`כרטיסיות: ${fcKnown}/${fcKnown+fcUnknown} ידעת`);
+    }
   }
-  if(fcIdx>0){
-    const pct=Math.round(fcKnown/(fcKnown+fcUnknown)*100);
-    toast(`כרטיסיות לימוד: ${fcKnown}/${fcKnown+fcUnknown} ידעת (${pct}%) | +15 נקודות`);
-  }
-  showDash();
+  showScreen('boost-screen');
 }
 
 function endFlashcards(){
   if(fcIdx>0 && fcIdx<fcCards.length){
     if(confirm('לצאת? ההתקדמות תישמר.')){endFlashcardSession()}
   }else{endFlashcardSession()}
+}
+
+// ===== QUESTION BANK =====
+const QBANK_CATEGORIES=[
+  {label:'עברית - תרגולים',keys:['ex1','ex2','ex3','ex4','ex5','ex6']},
+  {label:'עברית - ביטויים',keys:['expr1','expr2']},
+  {label:'עברית - אוצר מילים',keys:['wordMatch','opposites']},
+  {label:'עברית - הבנת הנקרא',keys:['comprehension','comprehension2']},
+  {label:'עברית - כתיב',keys:['spelling','spelling2']},
+  {label:'דפ"ר - מילוי הוראות',keys:['instr1','dictEx','dictPractice','compass','instrTest']},
+  {label:'דפ"ר - סדרות',keys:['seq3','seq4','seq5','seq6','seq7','seq8']},
+  {label:'דפ"ר - צורות',keys:['shapes','shapes2','shapes3','shapes4']}
+];
+
+let _qbankCurrentKey=null;
+
+function showQBank(){
+  if(!user||!user.isAdmin)return;
+  _qbankCurrentKey=null;
+  document.getElementById('qbank-search').value='';
+  renderQBankCategories();
+  showScreen('qbank-screen');
+}
+
+function renderQBankCategories(){
+  _qbankCurrentKey=null;
+  document.getElementById('qbank-back-btn').onclick=()=>showDash();
+  const body=document.getElementById('qbank-body');
+  const ovr=getOverrides();
+  let html='';
+  QBANK_CATEGORIES.forEach(cat=>{
+    let total=0,edited=0,deleted=0;
+    cat.keys.forEach(k=>{
+      const d=getQuizData(k);
+      if(d)total+=d.length;
+      // Count overrides for this key
+      Object.keys(ovr).forEach(ok=>{
+        if(ok.startsWith(k+':')){
+          if(ovr[ok].deleted)deleted++;else edited++;
+        }
+      });
+    });
+    html+=`<div class="glass" style="padding:14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="showQBankCategory('${cat.keys.join(',')}','${cat.label}')">
+      <div><div style="font-weight:700;font-size:14px">${cat.label}</div>
+      <div style="font-size:11px;color:var(--txtm);margin-top:2px">${total} שאלות${edited?' | '+edited+' נערכו':''}${deleted?' | '+deleted+' נמחקו':''}</div></div>
+      <span style="color:var(--txtm)">←</span></div>`;
+  });
+  body.innerHTML=html;
+}
+
+function showQBankCategory(keysStr,label){
+  const keys=keysStr.split(',');
+  _qbankCurrentKey=keysStr;
+  document.getElementById('qbank-back-btn').onclick=()=>{renderQBankCategories();document.getElementById('qbank-search').value=''};
+  renderQBankQuestions(keys,label);
+}
+
+function renderQBankQuestions(keys,label){
+  const body=document.getElementById('qbank-body');
+  const ovr=getOverrides();
+  const search=(document.getElementById('qbank-search').value||'').trim().toLowerCase();
+  let html=`<div style="font-weight:700;font-size:15px;margin-bottom:12px">${label}</div>`;
+  let count=0;
+  keys.forEach(key=>{
+    const data=getQuizData(key);
+    if(!data)return;
+    data.forEach((q,i)=>{
+      const srcKey=q._srcKey||key;
+      const srcIdx=q._srcIdx!==undefined?q._srcIdx:i;
+      const oKey=srcKey+':'+srcIdx;
+      const isEdited=ovr[oKey]&&!ovr[oKey].deleted;
+      const qText=(q.q||'').replace(/\n/g,' ');
+      if(search&&!qText.toLowerCase().includes(search))return;
+      count++;
+      html+=`<div class="glass" style="padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:13px;line-height:1.5;position:relative${isEdited?';border-right:3px solid var(--p)':''}" onclick="openQuestionEditor('${srcKey}',${srcIdx})">
+        <div style="display:flex;gap:6px;align-items:flex-start">
+          <span style="font-size:11px;color:var(--txtm);white-space:nowrap;min-width:42px">${srcKey}:${srcIdx}</span>
+          <span style="flex:1">${escHtml(qText.slice(0,100))}${qText.length>100?'...':''}</span>
+        </div>
+        ${isEdited?'<span style="position:absolute;left:8px;top:8px;font-size:10px;color:var(--pl)">נערך</span>':''}
+      </div>`;
+    });
+  });
+  if(!count)html+='<div class="no-data-msg">לא נמצאו שאלות</div>';
+  body.innerHTML=html;
+}
+
+function filterQBank(){
+  if(!_qbankCurrentKey)return;
+  const keys=_qbankCurrentKey.split(',');
+  const cat=QBANK_CATEGORIES.find(c=>c.keys.join(',')===_qbankCurrentKey);
+  renderQBankQuestions(keys,cat?cat.label:'');
+}
+
+function openQuestionEditor(srcKey,srcIdx){
+  if(!user||!user.isAdmin)return;
+  // Load the raw question from data
+  const data=getQuizData(srcKey);
+  if(!data){toast('לא נמצא מאגר: '+srcKey);return}
+  const q=data.find(d=>d._srcKey===srcKey&&d._srcIdx===srcIdx);
+  if(!q){toast('שאלה לא נמצאה: '+srcKey+':'+srcIdx);return}
+
+  adminEditMode='question';
+  editingQuestion={srcKey:srcKey,srcIdx:srcIdx,qRef:q};
+
+  const body=document.getElementById('admin-edit-body');
+  let html=`<div style="font-size:11px;color:var(--txtm);margin-bottom:8px;font-weight:600">מפתח: <code>${srcKey}:${srcIdx}</code></div>`;
+  html+=`<div class="edit-field"><label>טקסט השאלה</label><textarea id="edit-q-text" rows="3">${escHtml(q.q)}</textarea></div>`;
+  html+=`<div class="edit-section-title">תשובות (סמן את הנכונה)</div>`;
+  q.o.forEach((opt,i)=>{
+    const checked=i===q.a?'checked':'';
+    const isVis=q.visualOpts;
+    html+=`<div class="edit-opt-row"><input type="radio" name="edit-correct" value="${i}" ${checked}><span class="opt-label">${LETTERS[i]||i+1}</span><input type="text" id="edit-opt-${i}" value="${isVis?'[SVG ויזואלי]':escHtml(opt)}" ${isVis?'disabled':''}></div>`;
+  });
+  html+=`<div class="edit-field" style="margin-top:12px"><label>הסבר (מוצג אחרי תשובה)</label><textarea id="edit-q-expl" rows="2">${escHtml(q.e||'')}</textarea></div>`;
+  html+=`<button class="edit-delete-btn" onclick="deleteQBankQuestion('${srcKey}',${srcIdx})">🗑️ מחק שאלה זו לצמיתות</button>`;
+  body.innerHTML=html;
+
+  document.getElementById('admin-edit-save-btn').style.display='';
+  document.getElementById('admin-edit-modal').classList.remove('hidden');
+}
+
+function deleteQBankQuestion(srcKey,srcIdx){
+  if(!confirm('למחוק שאלה זו? לא תופיע יותר בתרגולים.'))return;
+  const ovr=getOverrides();
+  ovr[srcKey+':'+srcIdx]={deleted:true};
+  saveOverrides(ovr);
+  closeAdminEdit();
+  toast('✓ השאלה נמחקה');
+  // Refresh bank view if open
+  if(_qbankCurrentKey){
+    const keys=_qbankCurrentKey.split(',');
+    const cat=QBANK_CATEGORIES.find(c=>c.keys.join(',')===_qbankCurrentKey);
+    renderQBankQuestions(keys,cat?cat.label:'');
+  }
 }
 
 // ===== ADMIN & REPORTS =====
@@ -3142,14 +3422,18 @@ function openReport(){
   if(activeScreen.includes('quiz')&&qText&&qText.textContent){
     context+='\nשאלה: '+qText.textContent;
     const step=PATH[curStep];
+    const curQ=qList&&qList[qIdx];
     if(step&&step.dataKey){
       ref={type:'quiz',dataKey:step.dataKey,qIdx:qIdx,stepId:step.id,stepTitle:step.title};
-      context+=`\n[מפתח: ${step.dataKey}, שאלה ${qIdx+1}]`;
+      if(curQ&&curQ._srcKey!==undefined){ref.srcKey=curQ._srcKey;ref.srcIdx=curQ._srcIdx}
+      context+=`\n[מפתח: ${curQ?curQ._srcKey+':'+curQ._srcIdx:step.dataKey+':'+qIdx}]`;
     }
   } else if(activeScreen.includes('sim-screen')&&simQText&&simQText.textContent){
     context+='\nשאלה: '+simQText.textContent;
+    const curQ=qList&&qList[qIdx];
     ref={type:'sim',simCat:simCat,qIdx:qIdx,simKey:window._pathSimKey||'sim_'+simCat};
-    context+=`\n[סימולציה: ${simCat}, שאלה ${qIdx+1}/${qList.length}]`;
+    if(curQ&&curQ._srcKey!==undefined){ref.srcKey=curQ._srcKey;ref.srcIdx=curQ._srcIdx}
+    context+=`\n[מפתח: ${curQ?curQ._srcKey+':'+curQ._srcIdx:'sim_'+simCat+':'+qIdx}]`;
   } else if(activeScreen.includes('flashcard')&&fcCards.length>0&&fcIdx<fcCards.length){
     const card=fcCards[fcIdx];
     context+=`\nכרטיסיה: ${card.word} = ${card.meaning}`;
@@ -3168,49 +3452,120 @@ function closeReport(){document.getElementById('report-modal').classList.add('hi
 function submitReport(){
   const text=document.getElementById('report-text').value.trim();
   if(!text){toast('כתוב תיאור של הבעיה');return}
-  const reports=getReports();
   const entry={
     user:user?user.name:'אנונימי',
     text:text,
     context:document.getElementById('report-info').textContent,
-    timestamp:Date.now()
+    timestamp:Date.now(),
+    handled:false
   };
   if(window._reportRef)entry.ref=window._reportRef;
+  // Save to localStorage as fallback
+  const reports=getReports();
   reports.push(entry);
   saveReports(reports);
+  // Sync to Firestore for admin visibility
+  if(db){
+    const docId='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    db.collection('reports').doc(docId).set(entry).catch(e=>console.warn('Report sync failed:',e));
+  }
   window._reportRef=null;
   closeReport();
   toast('הדיווח נשלח! תודה 🙏');
 }
 
 function showAdminReports(){
-  const reports=getReports();
   const list=document.getElementById('admin-reports-list');
-  if(!reports.length){list.innerHTML='<div class="no-data-msg">אין פניות עדיין</div>';showScreen('admin-reports-screen');return}
-  let html='';
-  reports.slice().reverse().forEach((r,i)=>{
-    const date=new Date(r.timestamp);
-    const dateStr=date.toLocaleDateString('he-IL')+' '+date.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-    html+=`<div class="glass report-item"><div class="report-meta"><span>👤 ${r.user}</span><span>${dateStr}</span></div>`;
-    html+=`<div class="report-text">${r.text}</div>`;
-    if(r.context)html+=`<div class="report-context">${r.context}</div>`;
-    if(r.ref){
-      let refHTML='<div style="margin-top:6px;padding:8px;background:rgba(59,130,246,.1);border-radius:var(--r-sm);font-size:12px">';
-      refHTML+='<strong>🔗 מיקום:</strong> ';
-      if(r.ref.type==='quiz'){
-        refHTML+=`לומדה: ${r.ref.stepTitle||r.ref.stepId} | מפתח: <code>${r.ref.dataKey}</code> | שאלה מס\' ${(r.ref.qIdx||0)+1}`;
-      } else if(r.ref.type==='sim'){
-        refHTML+=`סימולציה: ${r.ref.simCat==='hebrew'?'עברית':'דפ"ר'} | מפתח: <code>${r.ref.simKey}</code> | שאלה מס\' ${(r.ref.qIdx||0)+1}`;
-      } else if(r.ref.type==='flashcard'){
-        refHTML+=`כרטיסיה: ${r.ref.fcSrc==='expr'?'ביטוי':'מילה'} | מפתח: <code>${r.ref.fcSrc}:${r.ref.fcIdx}</code> | "${r.ref.word||''}"`;
-      }
-      refHTML+='</div>';
-      html+=refHTML;
-    }
-    html+=`</div>`;
-  });
-  list.innerHTML=html;
+  list.innerHTML='<div class="no-data-msg" style="opacity:.6">טוען דיווחים...</div>';
   showScreen('admin-reports-screen');
+
+  // Fetch from Firestore if available, fallback to localStorage
+  const renderReports=(reports,source)=>{
+    const active=reports.filter(r=>!r.handled);
+    const handled=reports.filter(r=>r.handled);
+    if(!active.length&&!handled.length){list.innerHTML='<div class="no-data-msg">אין פניות עדיין</div>';return}
+    let html='';
+    if(active.length){
+      html+='<div style="font-size:13px;font-weight:700;color:var(--pl);margin-bottom:8px">פניות פעילות ('+active.length+')</div>';
+      active.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)).forEach(r=>{
+        html+=renderReportItem(r,source,false);
+      });
+    }
+    if(handled.length){
+      html+='<div style="font-size:13px;font-weight:700;color:var(--txtm);margin:16px 0 8px;cursor:pointer" onclick="this.nextElementSibling.classList.toggle(\'hidden\')">טופלו ('+handled.length+') ▾</div>';
+      html+='<div class="hidden">';
+      handled.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)).forEach(r=>{
+        html+=renderReportItem(r,source,true);
+      });
+      html+='</div>';
+    }
+    list.innerHTML=html;
+  };
+
+  if(db){
+    db.collection('reports').orderBy('timestamp','desc').limit(100).get().then(snap=>{
+      const reports=[];
+      snap.forEach(doc=>{const d=doc.data();d._docId=doc.id;reports.push(d)});
+      renderReports(reports,'firestore');
+    }).catch(e=>{
+      console.warn('Firestore reports fetch failed:',e);
+      renderReports(getReports(),'local');
+    });
+  }else{
+    renderReports(getReports(),'local');
+  }
+}
+
+function renderReportItem(r,source,isHandled){
+  const date=new Date(r.timestamp);
+  const dateStr=date.toLocaleDateString('he-IL')+' '+date.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  let html=`<div class="glass report-item" style="${isHandled?'opacity:.5':''}"><div class="report-meta"><span>👤 ${r.user}</span><span>${dateStr}</span></div>`;
+  html+=`<div class="report-text">${r.text}</div>`;
+  if(r.context)html+=`<div class="report-context">${r.context}</div>`;
+  if(r.ref){
+    let refHTML='<div style="margin-top:6px;padding:8px;background:rgba(59,130,246,.1);border-radius:var(--r-sm);font-size:12px">';
+    refHTML+='<strong>🔗 מיקום:</strong> ';
+    if(r.ref.type==='quiz'){
+      const sk=r.ref.srcKey||r.ref.dataKey;
+      const si=r.ref.srcIdx!==undefined?r.ref.srcIdx:r.ref.qIdx;
+      refHTML+=`לומדה: ${r.ref.stepTitle||r.ref.stepId} | מפתח: <code>${sk}:${si}</code>`;
+    } else if(r.ref.type==='sim'){
+      const sk=r.ref.srcKey||r.ref.simKey;
+      const si=r.ref.srcIdx!==undefined?r.ref.srcIdx:r.ref.qIdx;
+      refHTML+=`סימולציה: ${r.ref.simCat==='hebrew'?'עברית':'דפ"ר'} | מפתח: <code>${sk}:${si}</code>`;
+    } else if(r.ref.type==='flashcard'){
+      refHTML+=`כרטיסיה: ${r.ref.fcSrc==='expr'?'ביטוי':'מילה'} | מפתח: <code>${r.ref.fcSrc}:${r.ref.fcIdx}</code> | "${r.ref.word||''}"`;
+    }
+    // Add edit button for questions/flashcards
+    if(r.ref.type==='quiz'||r.ref.type==='sim'){
+      const ek=r.ref.srcKey||r.ref.dataKey||r.ref.simKey;
+      const ei=r.ref.srcIdx!==undefined?r.ref.srcIdx:(r.ref.qIdx||0);
+      if(ek)refHTML+=`<button class="btn" style="margin-top:6px;font-size:11px;padding:4px 12px;background:rgba(59,130,246,.12);color:var(--pl);border:1px solid rgba(59,130,246,.3)" onclick="openQuestionEditor('${ek}',${ei})">✏️ ערוך שאלה במאגר</button>`;
+    }
+    refHTML+='</div>';
+    html+=refHTML;
+  }
+  if(!isHandled&&r._docId){
+    html+=`<div style="margin-top:8px;display:flex;gap:6px">`;
+    html+=`<button class="btn" style="font-size:11px;padding:6px 14px;background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.3)" onclick="markReportHandled('${r._docId}',this)">סמן כטופל ✓</button>`;
+    html+=`</div>`;
+  }
+  if(isHandled)html+='<div style="margin-top:6px;font-size:11px;color:#22c55e;font-weight:600">✓ טופל</div>';
+  html+=`</div>`;
+  return html;
+}
+
+function markReportHandled(docId,btn){
+  if(!db)return;
+  btn.disabled=true;btn.textContent='מעדכן...';
+  db.collection('reports').doc(docId).update({handled:true,handledAt:Date.now(),handledBy:user?user.name:'admin'}).then(()=>{
+    toast('דיווח סומן כטופל');
+    showAdminReports();
+  }).catch(e=>{
+    console.warn('Mark handled failed:',e);
+    btn.disabled=false;btn.textContent='סמן כטופל ✓';
+    toast('שגיאה בעדכון');
+  });
 }
 
 // ===== INIT =====
@@ -3239,7 +3594,9 @@ function init(){
   const last=localStorage.getItem('pApp_last');
   if(last&&getUser(last)){
     user=getUser(last);if(!user.quizResults)user.quizResults={};
+    const wasReset=checkInactivityReset(user);
     user.lastActive=Date.now();saveUser(user);
+    if(wasReset)toast('עברו 3 חודשים - ההתקדמות אופסה. בהצלחה!');
     if(!user.profile){
       document.getElementById('profile-back-btn').style.display='none';
       showScreen('profile-screen');
@@ -3933,48 +4290,6 @@ const DPR_DATA = {
         a: 3,
         e: 'הגעת ל-1 מערבה ו-2 דרומה מההתחלה. כדי לחזור צריך ללכת 1 מזרחה ו-2 צפונה = צפון-מזרח'
       },
-      // Q11a - Table based
-      {
-        q: 'טבלת עובדים (חשמלאי, נהג, מהנדס, מסגר) עם גיל, ותק, דרגה, שעות נוספות ומשכורת בסיס.\nמי מבין העובדים הבכירים (לא חשמלאי ולא מהנדס) בעל המשכורת הגבוהה ביותר?',
-        o: ['חשמלאי', 'נהג', 'מהנדס', 'מסגר'],
-        a: 1,
-        e: 'מבין העובדים הבכירים, אחרי הוצאת חשמלאי ומהנדס, הנהג הוא בעל המשכורת הגבוהה ביותר'
-      },
-      // Q11b
-      {
-        q: 'מהי משכורת העובד הזוטר (לא נהג ולא חשמלאי)?',
-        o: ['2,500', '3,000', '3,500', '4,000'],
-        a: 1,
-        e: 'העובד הזוטר שאינו נהג ואינו חשמלאי, משכורתו 3,000'
-      },
-      // Q11c
-      {
-        q: 'מי מבין העובדים הבכירים בעל ותק גבוה אך המשכורת הנמוכה ביותר מבין הבכירים?',
-        o: ['חשמלאי', 'נהג', 'מהנדס', 'מסגר'],
-        a: 1,
-        e: 'הנהג הוא העובד הבכיר עם ותק גבוה אך משכורת בכירים נמוכה ביותר'
-      },
-      // Q11d
-      {
-        q: 'מי העובד הצעיר ביותר בעל המשכורת הנמוכה ביותר (לא בגיל 10, רק "צעיר" ולא "זוטר")?',
-        o: ['חשמלאי', 'נהג', 'מהנדס', 'מסגר'],
-        a: 3,
-        e: 'המסגר הוא העובד הצעיר ביותר עם המשכורת הנמוכה ביותר'
-      },
-      // Q11e
-      {
-        q: 'מהו המספר הסידורי של העובד הוותיק ביותר עם הכי מעט שעות נוספות?',
-        o: ['2', '3', '4', '5'],
-        a: 2,
-        e: 'העובד הוותיק ביותר עם הכי פחות שעות נוספות - מספרו הסידורי הוא 4'
-      },
-      // Q11f
-      {
-        q: 'מה גילו של העובד הוותיק ביותר בעל הוותק הנמוך ביותר?',
-        o: ['20', '25', '30', '35'],
-        a: 1,
-        e: 'העובד הוותיק ביותר עם הוותק הנמוך ביותר הוא בן 25'
-      }
     ],
 
     // ===== Section 17: Dictionary & Instructions Exercise =====
@@ -4508,20 +4823,6 @@ const DPR_DATA = {
         a: 2,
         e: 'הספרה 6 מופיעה 4 פעמים ברצף (מיקומים: 2, 11, 14, 16)'
       },
-      // Q5
-      {
-        q: 'משפט: "שיכונים חדשים נבנים לזוגות צעירים"\nצרפו את האותיות שנדרשות לפי ההוראות.\nאיזה שם מתקבל?',
-        o: ['שמחה', 'שמעון', 'שמשון', 'שומרון'],
-        a: 1,
-        e: 'מצירוף האותיות המבוקשות מתקבל השם "שמעון"'
-      },
-      // Q6
-      {
-        q: 'רצף אותיות נתון.\nכמה פעמים מופיעה האות ג אחרי האות ש?',
-        o: ['5', '4', '2', '1', '0'],
-        a: 4,
-        e: 'האות ג מופיעה אחרי ש אפס פעמים'
-      },
       // Q7
       {
         q: 'רשימת אותיות: א, ג, ח, ג, ג, א, ל\nכמה אותיות שונות יש ברשימה?',
@@ -4542,13 +4843,6 @@ const DPR_DATA = {
         o: ['ספיר', 'סופה', 'דקדקנות', 'דלילות'],
         a: 1,
         e: 'ד-ק אחרי ד-ל באלף-בית, לכן "דקדקנות" לא לפני "דלילות". התשובה: סופה'
-      },
-      // Q10
-      {
-        q: 'כמה פעמים מופיעה האות ה שלא ליד האותיות פ, ו, או צ?',
-        o: ['1', '2', '3', '4', '0'],
-        a: 0,
-        e: 'האות ה מופיעה פעם אחת שלא ליד פ, ו, או צ'
       },
       // Q11
       {
@@ -4851,7 +5145,52 @@ const DPR_DATA = {
     {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('x')}${a}${S('+',{r:0})}${a}${S('x')}${a}${S('+',{r:15})}${a}${S('x')}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('+',{r:30}),S('x'),S('+',{r:0}),S('+',{r:45})],visualOpts:true,a:0,e:'X ו-+ מתחלפים, ה-+ מסתובב 15° כל פעם. הבא: + ב-30°'},
     {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('ar',{s:36,r:0,f:F})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:90,f:F})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:180,f:F})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:0,f:E})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:90,f:E})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:180,f:E})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:0,f:BK})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:90,f:BK})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('ar',{s:36,r:180,f:BK}),S('ar',{s:36,r:270,f:BK}),S('ar',{s:36,r:0,f:BK}),S('ar',{s:36,r:180,f:F})],visualOpts:true,a:0,e:'שורות: צבע (סגול→ריק→אפור). עמודות: סיבוב (0°→90°→180°). חסר: חץ אפור 180°'},
     {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('dt',{s:36})}${a}${S('dt',{s:36})}${S('dt2',{s:36})}${a}${S('dt',{s:36})}${S('dt2',{s:36})}${S('dt3',{s:36})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:['1+2+3+4 נקודות','1+2+3 נקודות','4+3+2+1 נקודות','2+3+4 נקודות'],a:0,e:'בכל צעד נוסף דפוס נקודות חדש: (1)→(1,2)→(1,2,3)→(1,2,3,4)'},
-    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('c',{s:36,f:F})}</div><div class="shape-grid-cell">${S('s',{s:36,f:E})}</div><div class="shape-grid-cell">${S('d',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('d',{s:36,f:E})}</div><div class="shape-grid-cell">${S('c',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('s',{s:36,f:F})}</div><div class="shape-grid-cell">${S('s',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('d',{s:36,f:F})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('c',{s:36,f:E}),S('c',{s:36,f:F}),S('s',{s:36,f:E}),S('d',{s:36,f:E})],visualOpts:true,a:0,e:'ריבוע לטיני כפול: כל צורה וכל צבע פעם בשורה ועמודה. חסר: עיגול ריק'}
+    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('c',{s:36,f:F})}</div><div class="shape-grid-cell">${S('s',{s:36,f:E})}</div><div class="shape-grid-cell">${S('d',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('d',{s:36,f:E})}</div><div class="shape-grid-cell">${S('c',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('s',{s:36,f:F})}</div><div class="shape-grid-cell">${S('s',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('d',{s:36,f:F})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('c',{s:36,f:E}),S('c',{s:36,f:F}),S('s',{s:36,f:E}),S('d',{s:36,f:E})],visualOpts:true,a:0,e:'ריבוע לטיני כפול: כל צורה וכל צבע פעם בשורה ועמודה. חסר: עיגול ריק'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('t',{r:90,f:F})}${a}${S('t',{r:270,f:F})}${a}${S('t',{r:90,f:E})}${a}${S('t',{r:270,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('t',{r:90,f:BK}),S('t',{r:270,f:BK}),S('t',{r:0,f:BK}),S('t',{r:180,f:F})],visualOpts:true,a:0,e:'דפוס מראה: המשולש מתהפך (90°↔270°) עם מילוי מתחלף בזוגות (מלא→ריק→אפור). הבא: משולש ימינה אפור'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{f:F})}${a}${S('c',{f:F})+S('s',{f:F})}${a}${S('c',{f:F})+S('s',{f:F})+S('t',{f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{f:F})+S('s',{f:F})+S('t',{f:F})+S('d',{f:F}),S('d',{f:F}),S('c',{f:F})+S('s',{f:F}),S('t',{f:F})+S('d',{f:F})],visualOpts:true,a:0,e:'מורכבות גדלה: כל שלב מוסיף צורה חדשה. עיגול→עיגול+ריבוע→עיגול+ריבוע+משולש→עיגול+ריבוע+משולש+מעוין'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{f:F})}${a}${S('s',{f:E})}${a}${S('t',{f:F})}${a}${S('d',{f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('p',{f:F}),S('p',{f:E}),S('h',{f:F}),S('c',{f:E})],visualOpts:true,a:0,e:'שני דפוסים: צורה משתנה (עיגול→ריבוע→משולש→מעוין→מחומש) + מילוי מתחלף (מלא→ריק). הבא: מחומש מלא'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0,f:F})}${a}${S('ar',{r:0,f:E})}${a}${S('ar',{r:90,f:F})}${a}${S('ar',{r:90,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:180,f:F}),S('ar',{r:180,f:E}),S('ar',{r:270,f:F}),S('ar',{r:0,f:F})],visualOpts:true,a:0,e:'סיבוב עם שינוי מילוי: כל זוג חוזר על אותו כיוון (מלא→ריק) ואז מסתובב 90°. הבא: חץ 180° מלא'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{f:F})+S('s',{f:F})+S('t',{f:F})}${a}${S('s',{f:F})+S('t',{f:F})}${a}${S('t',{f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:['ריק (אין צורות)','מעוין אחד','עיגול אחד','שני משולשים'],a:0,e:'דפוס חיסור: כל שלב מסיר צורה מהתחלה. 3→2→1→0 (ריק)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('d',{r:0,f:F})}${a}${S('d',{r:45,f:E})}${a}${S('d',{r:90,f:F})}${a}${S('d',{r:135,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('d',{r:180,f:F}),S('d',{r:180,f:E}),S('d',{r:0,f:F}),S('d',{r:135,f:F})],visualOpts:true,a:0,e:'מעוין מסתובב 45° בכל שלב + מילוי מתחלף. 0° מלא→45° ריק→90° מלא→135° ריק→180° מלא'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:90,f:F})}${a}${S('ar',{r:270,f:F})}${a}${S('ar',{r:90,f:E})}${a}${S('ar',{r:270,f:E})}${a}${S('ar',{r:90,f:BK})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:270,f:BK}),S('ar',{r:90,f:BK}),S('ar',{r:0,f:BK}),S('ar',{r:180,f:F})],visualOpts:true,a:0,e:'חצים במראה (ימין↔שמאל) בזוגות, צבע משתנה כל זוג: סגול→ריק→אפור. הבא: חץ שמאלה אפור'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{s:24})}${a}${S('c',{s:24})+S('s',{s:28})}${a}${S('c',{s:24})+S('s',{s:28})+S('t',{s:32})}${a}${S('c',{s:24})+S('s',{s:28})+S('t',{s:32})+S('d',{s:36})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{s:24})+S('s',{s:28})+S('t',{s:32})+S('d',{s:36})+S('p',{s:40}),S('p',{s:40}),S('d',{s:36})+S('p',{s:40}),S('c',{s:24})+S('s',{s:28})],visualOpts:true,a:0,e:'כל שלב מוסיף צורה עם צלעות נוספות וגודל גדל. הבא: כל 5 הצורות כולל מחומש'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('h',{f:F})}${a}${S('p',{f:F})}${a}${S('s',{f:F})}${a}${S('t',{f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('d',{f:F}),S('c',{f:F}),S('h',{f:F}),S('p',{f:F})],visualOpts:true,a:0,e:'צלעות יורדות: משושה(6)→מחומש(5)→ריבוע(4)→משולש(3)→מעוין(2 קווים חוצים)'},
+    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('t',{s:36,r:0,f:F})}</div><div class="shape-grid-cell">${S('t',{s:36,r:120,f:F})}</div><div class="shape-grid-cell">${S('t',{s:36,r:240,f:F})}</div><div class="shape-grid-cell">${S('t',{s:36,r:0,f:E})}</div><div class="shape-grid-cell">${S('t',{s:36,r:120,f:E})}</div><div class="shape-grid-cell">${S('t',{s:36,r:240,f:E})}</div><div class="shape-grid-cell">${S('t',{s:36,r:0,f:BK})}</div><div class="shape-grid-cell">${S('t',{s:36,r:120,f:BK})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('t',{s:36,r:240,f:BK}),S('t',{s:36,r:0,f:BK}),S('t',{s:36,r:120,f:F}),S('t',{s:36,r:240,f:E})],visualOpts:true,a:0,e:'שורות: צבע קבוע (סגול→ריק→אפור). עמודות: סיבוב קבוע (0°→120°→240°). חסר: משולש אפור 240°'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('+',{r:0,sk:F})}${a}${S('x',{sk:F})}${a}${S('+',{r:0,sk:BK})}${a}${S('x',{sk:BK})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('+',{r:0,sk:TL}),S('x',{sk:TL}),S('+',{r:0,sk:F}),S('x',{sk:F})],visualOpts:true,a:0,e:'שני דפוסים: צורה מתחלפת (+↔X) וצבע משתנה כל זוג (סגול→אפור→טורקיז). הבא: + טורקיז'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{s:48,f:F})+S('s',{s:48,f:E})}${a}${S('c',{s:40,f:E})+S('s',{s:40,f:F})}${a}${S('c',{s:32,f:F})+S('s',{s:32,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{s:24,f:E})+S('s',{s:24,f:F}),S('c',{s:24,f:F})+S('s',{s:24,f:E}),S('c',{s:24,f:E})+S('s',{s:24,f:E}),S('c',{s:32,f:F})+S('s',{s:32,f:F})],visualOpts:true,a:0,e:'הגודל קטן (48→40→32→24) והמילוי מתחלף בין העיגול לריבוע. הבא: עיגול קטן ריק + ריבוע קטן מלא'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('dt4',{s:36})}${a}${S('dt3',{s:36})}${a}${S('dt2',{s:36})}${a}${S('dt',{s:36})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:['ריק (אפס נקודות)',S('dt',{s:36}),S('dt2',{s:36}),S('dt4',{s:36})],visualOpts:true,a:0,e:'דפוס חיסור: מספר הנקודות יורד: 4→3→2→1→0 (ריק)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('s',{r:0,f:F})}${a}${S('s',{r:15,f:E})}${a}${S('s',{r:30,f:F})}${a}${S('s',{r:45,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('s',{r:60,f:F}),S('s',{r:60,f:E}),S('s',{r:45,f:F}),S('s',{r:0,f:F})],visualOpts:true,a:0,e:'ריבוע מסתובב 15° בכל שלב + מילוי מתחלף (מלא→ריק). הבא: ריבוע 60° מלא'},
+    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('c',{s:36,f:F})}</div><div class="shape-grid-cell">${S('c',{s:36,f:E})}</div><div class="shape-grid-cell">${S('c',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('s',{s:36,f:E})}</div><div class="shape-grid-cell">${S('s',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('s',{s:36,f:F})}</div><div class="shape-grid-cell">${S('t',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('t',{s:36,f:F})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('t',{s:36,f:E}),S('t',{s:36,f:F}),S('t',{s:36,f:BK}),S('c',{s:36,f:E})],visualOpts:true,a:0,e:'שורות: צורה קבועה. צבעים מוזזים: (סגול,ריק,אפור)→(ריק,אפור,סגול)→(אפור,סגול,ריק). חסר: משולש ריק'}
+  ]})(),
+
+  // ===== Shapes & Patterns 4 (Expert) =====
+  shapes4:(function(){function S(t,o){o=o||{};var z=o.s||44,f=o.f||'none',k=o.sk||'#a78bfa',w=o.sw||2.5,r=o.r||0,h=z/2,i='';switch(t){case'c':i=`<circle cx="${h}" cy="${h}" r="${h-3}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case's':i=`<rect x="4" y="4" width="${z-8}" height="${z-8}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case't':i=`<polygon points="${h},5 ${z-5},${z-5} 5,${z-5}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case'd':i=`<polygon points="${h},4 ${z-4},${h} ${h},${z-4} 4,${h}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case'p':i=`<polygon points="${h},4 ${z-6},${h*0.72} ${z-10},${z-5} 10,${z-5} 6,${h*0.72}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case'h':i=`<polygon points="${h},4 ${z-8},${z*0.27} ${z-8},${z*0.73} ${h},${z-4} 8,${z*0.73} 8,${z*0.27}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case'+':i=`<line x1="${h}" y1="8" x2="${h}" y2="${z-8}" stroke="${k}" stroke-width="${w}"/><line x1="8" y1="${h}" x2="${z-8}" y2="${h}" stroke="${k}" stroke-width="${w}"/>`;break;case'x':i=`<line x1="8" y1="8" x2="${z-8}" y2="${z-8}" stroke="${k}" stroke-width="${w}"/><line x1="${z-8}" y1="8" x2="8" y2="${z-8}" stroke="${k}" stroke-width="${w}"/>`;break;case'ar':i=`<polygon points="${h},6 ${z-8},${z-8} ${h},${z-14} 8,${z-8}" fill="${f}" stroke="${k}" stroke-width="${w}"/>`;break;case'dt':i=`<circle cx="${h}" cy="${h}" r="4" fill="${k}"/>`;break;case'dt2':i=`<circle cx="${h-8}" cy="${h}" r="4" fill="${k}"/><circle cx="${h+8}" cy="${h}" r="4" fill="${k}"/>`;break;case'dt3':i=`<circle cx="${h}" cy="${h-8}" r="4" fill="${k}"/><circle cx="${h-8}" cy="${h+6}" r="4" fill="${k}"/><circle cx="${h+8}" cy="${h+6}" r="4" fill="${k}"/>`;break;case'dt4':i=`<circle cx="${h-8}" cy="${h-8}" r="4" fill="${k}"/><circle cx="${h+8}" cy="${h-8}" r="4" fill="${k}"/><circle cx="${h-8}" cy="${h+8}" r="4" fill="${k}"/><circle cx="${h+8}" cy="${h+8}" r="4" fill="${k}"/>`;break;}return`<svg width="${z}" height="${z}" viewBox="0 0 ${z} ${z}" style="display:inline-block;vertical-align:middle;${r?'transform:rotate('+r+'deg)':''}"><g>${i}</g></svg>`}var F='#a78bfa',E='none',BK='#64748b',TL='#2dd4bf',RD='#f87171',a=' ← ';return[
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0})}${a}${S('ar',{r:90})}${a}${S('ar',{r:180})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:270}),S('ar',{r:0}),S('ar',{r:180}),S('ar',{r:90})],visualOpts:true,a:0,e:'כיוון שעון: החץ מסתובב 90° בכיוון השעון. 12→3→6→9. הבא: חץ ל-9 (270°)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0,f:F})}${a}${S('ar',{r:120,f:F})}${a}${S('ar',{r:240,f:F})}${a}${S('ar',{r:0,f:E})}${a}${S('ar',{r:120,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:240,f:E}),S('ar',{r:0,f:E}),S('ar',{r:120,f:F}),S('ar',{r:240,f:F})],visualOpts:true,a:0,e:'סיבוב 120° במחזור (0→120→240) + מילוי משתנה כל מחזור. הבא: חץ 240° ריק'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('t',{r:0})+S('s',{r:0})}${a}${S('t',{r:90})+S('s',{r:30})}${a}${S('t',{r:180})+S('s',{r:60})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('t',{r:270})+S('s',{r:90}),S('t',{r:270})+S('s',{r:0}),S('t',{r:0})+S('s',{r:90}),S('t',{r:180})+S('s',{r:60})],visualOpts:true,a:0,e:'סיבוב כפול: המשולש מסתובב 90° והריבוע 30° בכל שלב. הבא: משולש 270° + ריבוע 90°'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('t',{f:F})}${a}${S('s',{f:F})}${a}${S('p',{f:F})}${a}${S('h',{f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{f:F}),'משושה 7 צלעות',S('h',{f:F}),S('s',{f:F})],visualOpts:true,a:0,e:'שינוי צורה: צלעות עולות 3→4→5→6→עיגול (אינסוף צלעות). הבא: עיגול'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{s:24,f:F,sk:F})}${a}${S('c',{s:32,f:F,sk:F})}${a}${S('c',{s:40,f:F,sk:F})}${a}${S('c',{s:48,f:F,sk:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{s:56,f:F,sk:F}),S('c',{s:48,f:F,sk:F}),S('c',{s:40,f:F,sk:F}),S('c',{s:24,f:F,sk:F})],visualOpts:true,a:0,e:'העיגול גדל ב-8 פיקסלים כל שלב: 24→32→40→48→56'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0})}${a}${S('ar',{r:45})}${a}${S('ar',{r:90})}${a}${S('ar',{r:135})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:180}),S('ar',{r:135}),S('ar',{r:225}),S('ar',{r:0})],visualOpts:true,a:0,e:'כיוון שעון (חצי צעד): החץ מסתובב 45° בכל שלב. 0°→45°→90°→135°→180°'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{f:F,sk:F})}${a}${S('c',{f:E,sk:BK})}${a}${S('c',{f:TL,sk:TL})}${a}${S('c',{f:F,sk:F})}${a}${S('c',{f:E,sk:BK})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{f:TL,sk:TL}),S('c',{f:F,sk:F}),S('c',{f:E,sk:BK}),S('c',{f:E,sk:TL})],visualOpts:true,a:0,e:'סדרת 3 צבעים חוזרת: סגול→אפור(ריק)→טורקיז→סגול→אפור→טורקיז'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('s',{s:24,r:0})}${a}${S('s',{s:32,r:15})}${a}${S('s',{s:40,r:30})}${a}${S('s',{s:48,r:45})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('s',{s:56,r:60}),S('s',{s:56,r:45}),S('s',{s:48,r:60}),S('s',{s:24,r:0})],visualOpts:true,a:0,e:'גודל + סיבוב: הריבוע גדל ב-8 ומסתובב 15° כל שלב. הבא: 56 פיקסל ב-60°'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0,f:F})+S('ar',{r:180,f:E})}${a}${S('ar',{r:90,f:E})+S('ar',{r:270,f:F})}${a}${S('ar',{r:180,f:F})+S('ar',{r:0,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:270,f:E})+S('ar',{r:90,f:F}),S('ar',{r:270,f:F})+S('ar',{r:90,f:E}),S('ar',{r:0,f:F})+S('ar',{r:180,f:E}),S('ar',{r:180,f:E})+S('ar',{r:0,f:F})],visualOpts:true,a:0,e:'סיבוב כפול: שני חצים מסתובבים 90° כל שלב, והמילוי מתחלף ביניהם. הבא: 270° ריק + 90° מלא'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('t',{f:F})}${a}${S('s',{f:E})}${a}${S('p',{f:BK})}${a}${S('h',{f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{f:E}),S('c',{f:BK}),S('c',{f:F}),S('t',{f:E})],visualOpts:true,a:0,e:'צורה משתנה (3→4→5→6→עיגול) + צבע במחזור 3 (סגול→ריק→אפור→סגול→ריק). הבא: עיגול ריק'},
+    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('ar',{s:36,r:0})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:90})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:180})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:90})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:180})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:270})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:180})}</div><div class="shape-grid-cell">${S('ar',{s:36,r:270})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('ar',{s:36,r:0}),S('ar',{s:36,r:90}),S('ar',{s:36,r:270}),S('ar',{s:36,r:180})],visualOpts:true,a:0,e:'כיוון שעון בטבלה: כל שורה מוזזת 90°. שורה 3: 180°,270°,0°. חסר: חץ 0° (למעלה)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{s:44,f:F})}${a}${S('c',{s:44,f:E})+S('s',{s:28,f:F})}${a}${S('c',{s:44,f:F})+S('s',{s:28,f:E})+S('t',{s:22,f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{s:44,f:E})+S('s',{s:28,f:F})+S('t',{s:22,f:E})+S('d',{s:18,f:F}),S('c',{s:44,f:F})+S('s',{s:28,f:F})+S('t',{s:22,f:F})+S('d',{s:18,f:F}),S('d',{s:18,f:F}),S('c',{s:44,f:E})+S('s',{s:28,f:E})],visualOpts:true,a:0,e:'מורכבות גדלה + מילוי מתחלף: כל שלב מוסיף צורה קטנה יותר עם מילוי מתחלף'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('d',{r:0,f:F})}${a}${S('d',{r:30,f:TL})}${a}${S('d',{r:60,f:BK})}${a}${S('d',{r:90,f:F})}${a}${S('d',{r:120,f:TL})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('d',{r:150,f:BK}),S('d',{r:150,f:F}),S('d',{r:120,f:BK}),S('d',{r:180,f:TL})],visualOpts:true,a:0,e:'סיבוב 30° + מחזור 3 צבעים (סגול→טורקיז→אפור). הבא: מעוין 150° אפור'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{f:F})+S('c',{f:F})+S('c',{f:F})}${a}${S('c',{f:F})+S('c',{f:F})}${a}${S('c',{f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:['ריק (אפס עיגולים)',S('c',{f:E}),S('c',{f:F})+S('c',{f:F}),S('c',{f:F})],visualOpts:true,a:0,e:'דפוס חיסור: מספר העיגולים יורד: 3→2→1→0 (ריק)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('t',{r:0,f:F})}${a}${S('t',{r:180,f:F})}${a}${S('t',{r:0,f:E})}${a}${S('t',{r:180,f:E})}${a}${S('t',{r:0,f:BK})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('t',{r:180,f:BK}),S('t',{r:0,f:BK}),S('t',{r:180,f:F}),S('t',{r:0,f:E})],visualOpts:true,a:0,e:'דפוס מראה + צבע: המשולש מתהפך (0°↔180°) בזוגות, צבע משתנה כל זוג. הבא: משולש הפוך אפור'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0})+S('c',{s:20,f:F})}${a}${S('ar',{r:90})+S('s',{s:20,f:F})}${a}${S('ar',{r:180})+S('t',{s:20,f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:270})+S('d',{s:20,f:F}),S('ar',{r:270})+S('c',{s:20,f:F}),S('ar',{r:0})+S('d',{s:20,f:F}),S('ar',{r:180})+S('s',{s:20,f:F})],visualOpts:true,a:0,e:'שני דפוסים עצמאיים: החץ סובב 90° בשעון + הצורה מתקדמת (עיגול→ריבוע→משולש→מעוין)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('h',{s:28,f:E})}${a}${S('p',{s:32,f:F})}${a}${S('s',{s:36,f:E})}${a}${S('t',{s:40,f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('d',{s:44,f:E}),S('d',{s:44,f:F}),S('c',{s:44,f:E}),S('c',{s:44,f:F})],visualOpts:true,a:0,e:'צלעות יורדות (6→5→4→3→מעוין) + גודל גדל + מילוי מתחלף. הבא: מעוין גדול ריק'},
+    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('c',{s:36,f:F})+S('s',{s:20,f:E})}</div><div class="shape-grid-cell">${S('c',{s:36,f:E})+S('s',{s:20,f:F})}</div><div class="shape-grid-cell">${S('c',{s:36,f:F})+S('s',{s:20,f:E})}</div><div class="shape-grid-cell">${S('s',{s:36,f:E})+S('t',{s:20,f:F})}</div><div class="shape-grid-cell">${S('s',{s:36,f:F})+S('t',{s:20,f:E})}</div><div class="shape-grid-cell">${S('s',{s:36,f:E})+S('t',{s:20,f:F})}</div><div class="shape-grid-cell">${S('t',{s:36,f:F})+S('c',{s:20,f:E})}</div><div class="shape-grid-cell">${S('t',{s:36,f:E})+S('c',{s:20,f:F})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('t',{s:36,f:F})+S('c',{s:20,f:E}),S('t',{s:36,f:E})+S('c',{s:20,f:F}),S('c',{s:36,f:F})+S('t',{s:20,f:E}),S('t',{s:36,f:F})+S('c',{s:20,f:F})],visualOpts:true,a:0,e:'שורות: צורה גדולה+קטנה קבועות. עמודות: מילוי מתחלף (גדול מלא+קטן ריק ↔ גדול ריק+קטן מלא). חסר: משולש מלא + עיגול ריק'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{s:24,f:E})+S('c',{s:44,f:E})}${a}${S('s',{s:28,f:F})+S('s',{s:40,f:F})}${a}${S('t',{s:32,f:E})+S('t',{s:36,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('d',{s:36,f:F})+S('d',{s:32,f:F}),S('d',{s:36,f:E})+S('d',{s:32,f:E}),S('d',{s:36,f:F})+S('d',{s:32,f:E}),S('c',{s:24,f:F})+S('c',{s:44,f:F})],visualOpts:true,a:0,e:'3 דפוסים: צורה מתקדמת + גדלים מתקרבים (24,44→28,40→32,36→36,32) + מילוי מתחלף. הבא: 2 מעוינים מלאים'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('ar',{r:0,f:F})}${a}${S('ar',{r:60,f:E})}${a}${S('ar',{r:120,f:F})}${a}${S('ar',{r:180,f:E})}${a}${S('ar',{r:240,f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('ar',{r:300,f:E}),S('ar',{r:300,f:F}),S('ar',{r:0,f:E}),S('ar',{r:240,f:E})],visualOpts:true,a:0,e:'כיוון שעון (60°): חץ מסתובב 60° כל שלב + מילוי מתחלף. הבא: חץ 300° ריק'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('+',{r:0,sk:F})+S('x',{sk:E})}${a}${S('+',{r:15,sk:E})+S('x',{sk:F})}${a}${S('+',{r:30,sk:F})+S('x',{sk:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('+',{r:45,sk:E})+S('x',{sk:F}),S('+',{r:45,sk:F})+S('x',{sk:E}),S('+',{r:30,sk:E})+S('x',{sk:F}),S('+',{r:0,sk:F})+S('x',{sk:E})],visualOpts:true,a:0,e:'ה-+ מסתובב 15° כל שלב + הצבעים מתחלפים בין + ל-X. הבא: + ב-45° ריק + X סגול'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('t',{s:24,r:0,f:F})}${a}${S('s',{s:30,r:15,f:E})}${a}${S('p',{s:36,r:30,f:BK})}${a}${S('h',{s:42,r:45,f:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('c',{s:48,f:E}),S('c',{s:48,f:BK}),S('c',{s:48,f:F}),S('t',{s:48,r:60,f:E})],visualOpts:true,a:0,e:'4 דפוסים: צלעות עולות + גודל גדל + סיבוב 15° + צבע במחזור 3. הבא: עיגול גדול ריק'},
+    {q:'מהי הצורה החסרה?',visual:`<div class="shape-grid"><div class="shape-grid-cell">${S('c',{s:36,f:F})}</div><div class="shape-grid-cell">${S('s',{s:36,f:TL})}</div><div class="shape-grid-cell">${S('t',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('s',{s:36,f:BK})}</div><div class="shape-grid-cell">${S('t',{s:36,f:F})}</div><div class="shape-grid-cell">${S('c',{s:36,f:TL})}</div><div class="shape-grid-cell">${S('t',{s:36,f:TL})}</div><div class="shape-grid-cell">${S('c',{s:36,f:BK})}</div><div class="shape-grid-cell highlight"><span style="font-size:20px;color:var(--pl)">?</span></div></div>`,o:[S('s',{s:36,f:F}),S('s',{s:36,f:TL}),S('c',{s:36,f:F}),S('t',{s:36,f:F})],visualOpts:true,a:0,e:'ריבוע לטיני כפול: כל צורה וכל צבע בדיוק פעם בכל שורה ועמודה. חסר: ריבוע סגול'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('dt',{s:36})+S('c',{s:36,f:E})}${a}${S('dt2',{s:36})+S('s',{s:36,f:E})}${a}${S('dt3',{s:36})+S('t',{s:36,f:E})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('dt4',{s:36})+S('d',{s:36,f:E}),S('dt4',{s:36})+S('s',{s:36,f:E}),S('dt',{s:36})+S('d',{s:36,f:E}),S('dt3',{s:36})+S('c',{s:36,f:E})],visualOpts:true,a:0,e:'שני דפוסים: נקודות עולות (1→2→3→4) + צורה מתקדמת (עיגול→ריבוע→משולש→מעוין)'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('s',{f:F})+S('s',{f:F})+S('s',{f:F})+S('s',{f:F})}${a}${S('s',{f:E})+S('s',{f:E})+S('s',{f:E})}${a}${S('s',{f:BK})+S('s',{f:BK})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('s',{f:F}),S('s',{f:TL}),S('s',{f:E}),S('s',{f:BK})],visualOpts:true,a:0,e:'חיסור + שינוי צבע: כמות יורדת (4→3→2→1) + צבע משתנה. הבא: ריבוע סגול אחד'},
+    {q:'מהי הצורה הבאה בסדרה?',visual:`<div class="shape-seq">${S('c',{s:44,f:F,sk:BK})}${a}${S('s',{s:44,f:BK,sk:F})}${a}${S('t',{s:44,f:F,sk:BK})}${a}${S('d',{s:44,f:BK,sk:F})}${a}<span style="font-size:28px;color:var(--pl)">?</span></div>`,o:[S('p',{s:44,f:F,sk:BK}),S('p',{s:44,f:BK,sk:F}),S('h',{s:44,f:F,sk:BK}),S('h',{s:44,f:BK,sk:F})],visualOpts:true,a:0,e:'צורה מתקדמת + מילוי וקו מתחלפים. הבא: מחומש סגול עם קו אפור'}
   ]})()
 };
 </script>
