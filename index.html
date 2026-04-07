@@ -17,7 +17,7 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
 (function(){
   var lastActive=Date.now();
   document.addEventListener('visibilitychange',function(){
-    if(document.visibilityState==='visible'&&Date.now()-lastActive>30000){
+    if(document.visibilityState==='visible'&&Date.now()-lastActive>300000){
       window.location.reload();
     }
     lastActive=Date.now();
@@ -491,6 +491,11 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 .review-opt.correct-answer{background:rgba(74,222,128,.06);border-color:rgba(74,222,128,.15)}
 .review-opt.correct-answer .review-letter{background:var(--ok);color:var(--bg)}
 
+/* Question bank rows */
+.qbank-row{padding:14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:var(--tr)}
+.qbank-row:active{transform:scale(.98);background:rgba(99,102,241,.12)}
+.qbank-item{padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:13px;line-height:1.5;position:relative;transition:var(--tr)}
+.qbank-item:active{transform:scale(.98);background:rgba(99,102,241,.12)}
 /* Admin reports */
 .report-item{padding:var(--sp-lg);margin-bottom:var(--sp-sm)}
 .report-meta{font-size:11px;color:var(--txtm);margin-bottom:var(--sp-sm);display:flex;justify-content:space-between;font-weight:500}
@@ -715,11 +720,11 @@ Google
 <button class="btn btn-secondary" onclick="editProfile()" style="margin-top:8px;font-size:12px;padding:6px 14px">עריכת פרופיל</button>
 </div>
 <div class="action-cards">
-<div class="action-card glass" id="lb-btn"><span class="action-icon">🏆</span><div style="flex:1"><span class="action-text">טבלת דירוג</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-reports-btn" style="display:none"><span class="action-icon">📋</span><div style="flex:1"><span class="action-text">פניות משתמשים</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-lb-config-btn" style="display:none"><span class="action-icon">⚙️</span><div style="flex:1"><span class="action-text">הגדרות דירוג</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-qbank-btn" style="display:none" onclick="showQBank()"><span class="action-icon">📦</span><div style="flex:1"><span class="action-text">מאגר שאלות</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="admin-push-overrides-btn" style="display:none" onclick="pushAllOverrides()"><span class="action-icon">☁️</span><div style="flex:1"><span class="action-text">העלה עריכות לשרת</span></div><span class="action-arrow">←</span></div>
+<div class="action-card glass" id="admin-seed-count-btn" style="display:none" onclick="seedUserCount()"><span class="action-icon">👥</span><div style="flex:1"><span class="action-text">עדכן מונה משתמשים</span></div><span class="action-arrow">←</span></div>
 <div class="action-card glass" id="logout-btn"><span class="action-icon">🚪</span><div style="flex:1"><span class="action-text">התנתק</span></div><span class="action-arrow">←</span></div>
 </div>
 </div>
@@ -1084,7 +1089,7 @@ const newUser=n=>({name:n,points:0,completed:[],totalTime:0,lastActive:Date.now(
 let _syncTimer=null;
 let _firestoreUsersCache=null;
 let _firestoreCacheTime=0;
-const FIRESTORE_CACHE_TTL=300000; // 5 minutes
+const FIRESTORE_CACHE_TTL=600000; // 10 minutes
 let _userCountCache=null;
 let _userCountCacheTime=0;
 const USER_COUNT_CACHE_TTL=600000; // 10 minutes
@@ -1112,9 +1117,7 @@ function syncUserToFirestore(u){
     };
     db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
-      _firestoreUsersCache=null;
-      // Update stats counter (1 write instead of querying all users)
-      db.collection('appConfig').doc('stats').set({lastSync:Date.now()},{merge:true}).catch(()=>{});
+      // Note: do NOT invalidate _firestoreUsersCache here - let TTL handle it to reduce reads
     }).catch(e=>console.warn('Firestore sync error:',e));
   },10000);
 }
@@ -1289,6 +1292,11 @@ function enterApp(uid,displayName,email){
     if(db){
       db.collection('users').doc(uid).get().then(doc=>{
         if(doc.exists){u=mergeFirestoreUser(doc.data(),u);u.uid=uid;u.name=displayName;if(email)u.email=email}
+        else{
+          // New user - increment global counter
+          db.collection('appConfig').doc('stats').set({totalUsers:firebase.firestore.FieldValue.increment(1)},{merge:true}).catch(()=>{});
+          _userCountCache=null;
+        }
         finishEntry();
       }).catch(()=>finishEntry());
     } else {
@@ -1427,6 +1435,7 @@ function showMore(){
   document.getElementById('admin-lb-config-btn').style.display=user.isAdmin?'flex':'none';
   document.getElementById('admin-push-overrides-btn').style.display=user.isAdmin?'flex':'none';
   document.getElementById('admin-qbank-btn').style.display=user.isAdmin?'flex':'none';
+  document.getElementById('admin-seed-count-btn').style.display=user.isAdmin?'flex':'none';
   // Profile display
   const pDisp=document.getElementById('profile-display-content');
   const pCard=document.getElementById('profile-display');
@@ -1489,19 +1498,30 @@ function getBoostCount(){
 function getTotalUserCount(){
   const el=document.getElementById('h-user-count');
   const liveEl=document.getElementById('h-live-count');
-  const local=Object.keys(getUsers()).length;
-  if(el)el.textContent=local;
   if(liveEl)liveEl.textContent='0';
-  // Use cached leaderboard data for counts (0 extra reads!)
+  // Use cached stats counter (1 doc read, cached for 10 min)
+  if(_userCountCache!==null&&(Date.now()-_userCountCacheTime<USER_COUNT_CACHE_TTL)){
+    if(el)el.textContent=_userCountCache;
+  } else {
+    const local=Object.keys(getUsers()).length;
+    if(el)el.textContent=local;
+    if(db){
+      db.collection('appConfig').doc('stats').get().then(doc=>{
+        if(doc.exists&&doc.data().totalUsers){
+          _userCountCache=doc.data().totalUsers;
+          _userCountCacheTime=Date.now();
+          if(el)el.textContent=_userCountCache;
+        }
+      }).catch(()=>{});
+    }
+  }
+  // Live count from leaderboard cache (no extra reads)
   if(_firestoreUsersCache&&_firestoreUsersCache.length>0){
-    const merged=new Set(Object.keys(getUsers()));
     let liveCount=0;
     const fiveMinAgo=Date.now()-5*60*1000;
     _firestoreUsersCache.forEach(u=>{
-      if(u.uid)merged.add(u.uid);
       if(u.lastActive&&u.lastActive>fiveMinAgo)liveCount++;
     });
-    if(el)el.textContent=merged.size;
     if(liveEl)liveEl.textContent=liveCount;
   }
 }
@@ -3312,10 +3332,10 @@ function renderQBankCategories(){
         }
       });
     });
-    html+=`<div class="glass" style="padding:14px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="showQBankCategory('${cat.keys.join(',')}','${cat.label}')">
-      <div><div style="font-weight:700;font-size:14px">${cat.label}</div>
-      <div style="font-size:11px;color:var(--txtm);margin-top:2px">${total} שאלות${edited?' | '+edited+' נערכו':''}${deleted?' | '+deleted+' נמחקו':''}</div></div>
-      <span style="color:var(--txtm)">←</span></div>`;
+    html+=`<div class="glass qbank-row" onclick="showQBankCategory('${cat.keys.join(',')}','${cat.label}')">
+      <span style="color:var(--txtm);font-size:18px">←</span>
+      <div style="flex:1;text-align:right"><div style="font-weight:700;font-size:14px">${cat.label}</div>
+      <div style="font-size:11px;color:var(--txtm);margin-top:2px">${total} שאלות${edited?' | '+edited+' נערכו':''}${deleted?' | '+deleted+' נמחקו':''}</div></div></div>`;
   });
   body.innerHTML=html;
 }
@@ -3344,7 +3364,7 @@ function renderQBankQuestions(keys,label){
       const qText=(q.q||'').replace(/\n/g,' ');
       if(search&&!qText.toLowerCase().includes(search))return;
       count++;
-      html+=`<div class="glass" style="padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:13px;line-height:1.5;position:relative${isEdited?';border-right:3px solid var(--p)':''}" onclick="openQuestionEditor('${srcKey}',${srcIdx})">
+      html+=`<div class="glass qbank-item${isEdited?' edited':''}" style="${isEdited?'border-right:3px solid var(--p)':''}" onclick="openQuestionEditor('${srcKey}',${srcIdx})">
         <div style="display:flex;gap:6px;align-items:flex-start">
           <span style="font-size:11px;color:var(--txtm);white-space:nowrap;min-width:42px">${srcKey}:${srcIdx}</span>
           <span style="flex:1">${escHtml(qText.slice(0,100))}${qText.length>100?'...':''}</span>
@@ -3536,14 +3556,14 @@ function renderReportItem(r,source,isHandled){
     } else if(r.ref.type==='flashcard'){
       refHTML+=`כרטיסיה: ${r.ref.fcSrc==='expr'?'ביטוי':'מילה'} | מפתח: <code>${r.ref.fcSrc}:${r.ref.fcIdx}</code> | "${r.ref.word||''}"`;
     }
-    // Add edit button for questions/flashcards
+    refHTML+='</div>';
+    html+=refHTML;
+    // Edit question button - prominent, outside ref block
     if(r.ref.type==='quiz'||r.ref.type==='sim'){
       const ek=r.ref.srcKey||r.ref.dataKey||r.ref.simKey;
       const ei=r.ref.srcIdx!==undefined?r.ref.srcIdx:(r.ref.qIdx||0);
-      if(ek)refHTML+=`<button class="btn" style="margin-top:6px;font-size:11px;padding:4px 12px;background:rgba(59,130,246,.12);color:var(--pl);border:1px solid rgba(59,130,246,.3)" onclick="openQuestionEditor('${ek}',${ei})">✏️ ערוך שאלה במאגר</button>`;
+      if(ek)html+=`<button class="btn" style="margin-top:8px;width:100%;font-size:13px;padding:8px 14px;background:rgba(99,102,241,.15);color:var(--pl);border:1px solid rgba(99,102,241,.3);border-radius:var(--r-sm);font-weight:600" onclick="openQuestionEditor('${ek}',${ei})">📦 ערוך שאלה מהמאגר</button>`;
     }
-    refHTML+='</div>';
-    html+=refHTML;
   }
   if(!isHandled&&r._docId){
     html+=`<div style="margin-top:8px;display:flex;gap:6px">`;
@@ -3553,6 +3573,19 @@ function renderReportItem(r,source,isHandled){
   if(isHandled)html+='<div style="margin-top:6px;font-size:11px;color:#22c55e;font-weight:600">✓ טופל</div>';
   html+=`</div>`;
   return html;
+}
+
+function seedUserCount(){
+  if(!db||!user||!user.isAdmin){toast('רק אדמין');return}
+  toast('סופר משתמשים...');
+  db.collection('users').get().then(snap=>{
+    const count=snap.size;
+    db.collection('appConfig').doc('stats').set({totalUsers:count},{merge:true}).then(()=>{
+      _userCountCache=count;_userCountCacheTime=Date.now();
+      getTotalUserCount();
+      toast('✓ מונה עודכן: '+count+' משתמשים');
+    });
+  }).catch(e=>toast('שגיאה: '+e.message));
 }
 
 function markReportHandled(docId,btn){
@@ -3578,7 +3611,6 @@ function init(){
   document.getElementById('login-password').onkeydown=e=>{if(e.key==='Enter')emailLogin()};
   document.getElementById('reg-password').onkeydown=e=>{if(e.key==='Enter')emailRegister()};
   document.getElementById('logout-btn').onclick=logout;
-  document.getElementById('lb-btn').onclick=showLB;
   document.getElementById('next-btn').onclick=nextQ;
   document.getElementById('quit-quiz-btn').onclick=quitQuiz;
   // Boost buttons
