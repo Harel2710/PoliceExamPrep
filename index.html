@@ -1515,15 +1515,16 @@ function getTotalUserCount(){
       }).catch(()=>{});
     }
   }
-  // Live count from leaderboard cache (no extra reads)
+  // Live count: at least 1 (current user) + leaderboard cache
+  let liveCount=user?1:0;
   if(_firestoreUsersCache&&_firestoreUsersCache.length>0){
-    let liveCount=0;
     const fiveMinAgo=Date.now()-5*60*1000;
+    const selfUid=user?user.uid:'';
     _firestoreUsersCache.forEach(u=>{
-      if(u.lastActive&&u.lastActive>fiveMinAgo)liveCount++;
+      if(u.lastActive&&u.lastActive>fiveMinAgo&&u.uid!==selfUid)liveCount++;
     });
-    if(liveEl)liveEl.textContent=liveCount;
   }
+  if(liveEl)liveEl.textContent=liveCount;
 }
 
 function showDash(){
