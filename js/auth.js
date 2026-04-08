@@ -49,9 +49,12 @@ function emailRegister(){
   });
 }
 function checkInactivityReset(u){
-  if(!u||!u.lastActive||u.isAdmin)return false;
-  const elapsed=Date.now()-u.lastActive;
-  if(elapsed>THREE_MONTHS&&(u.points||0)>0){
+  if(!u||u.isAdmin)return false;
+  // Use last time points were earned, fallback to lastActive
+  const lastPointsDate=u.lastPointsDate||u.lastActive||0;
+  if(!lastPointsDate)return false;
+  const elapsed=Date.now()-lastPointsDate;
+  if(elapsed>INACTIVITY_LIMIT&&(u.points||0)>0){
     // Reset progress, keep identity
     u.points=0;
     u.completed=[];
@@ -83,11 +86,14 @@ function enterApp(uid,displayName,email){
       user=u;saveUser(user);
       localStorage.setItem('pApp_last',uid);
       if(wasReset){
-        toast('עברו 3 חודשים - ההתקדמות אופסה. בהצלחה!');
+        toast('עבר חודש ללא פעילות - ההתקדמות אופסה. בהצלחה!');
       }
       if(!u.profile){
         document.getElementById('profile-back-btn').style.display='none';
         showScreen('profile-screen');
+      } else if(needsReclassification(u)){
+        // Trainee with old cohort field but no department — one-time re-classify
+        showReclassifyPopup();
       } else {
         showDash();startTimeTracking();
         document.getElementById('report-fab').style.display='flex';
@@ -136,9 +142,13 @@ function selectProfileRole(role){
   if(role==='active'){
     af.classList.remove('hidden');af.style.display='';
     tf.classList.add('hidden');tf.style.display='none';
-  } else {
+  } else if(role==='trainee'){
     tf.classList.remove('hidden');tf.style.display='';
     af.classList.add('hidden');af.style.display='none';
+  } else {
+    // citizen - no extra fields
+    af.classList.add('hidden');af.style.display='none';
+    tf.classList.add('hidden');tf.style.display='none';
   }
   sb.style.display='';
   document.getElementById('profile-error').textContent='';
@@ -154,23 +164,27 @@ function saveProfile(){
     if(!district){errEl.textContent='בחר מחוז / אגף';return}
     profile.district=district;
     profile.unit=unit;
-  } else {
+  } else if(_profileRole==='trainee'){
     const platoon=document.getElementById('profile-platoon').value;
-    const cohort=document.getElementById('profile-cohort').value;
+    const department=document.getElementById('profile-department').value;
     if(!platoon){errEl.textContent='בחר פלוגה';return}
-    if(!cohort){errEl.textContent='בחר מחזור';return}
+    if(!department){errEl.textContent='בחר מחלקה';return}
     profile.platoon=platoon;
-    profile.cohort=cohort;
+    profile.department=parseInt(department);
   }
+  // citizen has no extra fields
   if(!user){errEl.textContent='שגיאה: משתמש לא מחובר';return}
   user.profile=profile;
   // Auto-set classification for leaderboard
   if(profile.role==='active'){
     user.classification={type:'officer',district:profile.district,unit:profile.unit||''};
+  } else if(profile.role==='trainee'){
+    user.classification={type:'trainee',company:profile.platoon,department:profile.department};
   } else {
-    user.classification={type:'trainee',company:profile.platoon,cohort:profile.cohort};
+    user.classification={type:'citizen'};
   }
   saveUser(user);
+  _lbGroupCache=null; // clear leaderboard cache on classification change
   showDash();startTimeTracking();
   document.getElementById('report-fab').style.display='flex';
   toggleAdminFab();
@@ -205,6 +219,54 @@ function toggleAuthView(view){
   document.getElementById('auth-login-view').classList.toggle('hidden',view!=='login');
   document.getElementById('auth-register-view').classList.toggle('hidden',view!=='register');
   document.getElementById('login-error').textContent='';
+}
+
+// ===== RE-CLASSIFICATION FOR TRAINEES =====
+function needsReclassification(u){
+  if(!u.profile||!u.classification)return false;
+  // Trainee with old cohort field but no department
+  if(u.classification.type==='trainee'&&!u.classification.department)return true;
+  return false;
+}
+
+function showReclassifyPopup(){
+  const cfg=getLBConfig();
+  const modal=document.getElementById('classify-modal');
+  const opts=document.getElementById('classify-type-options');
+  // Show only the department+platoon selection (we already know they're a trainee)
+  opts.innerHTML=`<div style="text-align:center;margin-bottom:12px">
+    <div style="font-size:36px;margin-bottom:8px">🎓</div>
+    <div style="font-size:15px;font-weight:700;color:var(--txt)">עדכון סיווג חניך</div>
+    <div style="font-size:13px;color:var(--txtm);margin-top:4px">בחר פלוגה ומחלקה כדי להמשיך</div>
+  </div>
+  <div class="classify-field"><label>פלוגה</label>
+    <select id="recls-company"><option value="">בחר...</option>${cfg.traineeCompanies.map(c=>`<option value="${c}"${user.classification&&user.classification.company===c?' selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="classify-field"><label>מחלקה</label>
+    <select id="recls-department"><option value="">בחר...</option>${cfg.traineeDepartments.map(d=>`<option value="${d}">מחלקה ${d}</option>`).join('')}</select></div>`;
+  document.getElementById('classify-step2').classList.add('hidden');
+  document.getElementById('classify-save-btn').classList.remove('hidden');
+  document.getElementById('classify-save-btn').onclick=saveReclassification;
+  modal.classList.remove('hidden');
+  showScreen('lb-screen');
+}
+
+function saveReclassification(){
+  const company=document.getElementById('recls-company')?.value;
+  const department=document.getElementById('recls-department')?.value;
+  if(!company){toast('בחר פלוגה');return}
+  if(!department){toast('בחר מחלקה');return}
+  user.classification={type:'trainee',company:company,department:parseInt(department)};
+  user.profile.platoon=company;
+  user.profile.department=parseInt(department);
+  delete user.profile.cohort; // remove old field
+  delete user.classification.cohort;
+  saveUser(user);
+  _lbGroupCache=null;
+  closeClassify();
+  toast('סיווג עודכן! ✓');
+  showDash();startTimeTracking();
+  document.getElementById('report-fab').style.display='flex';
+  toggleAdminFab();
 }
 
 

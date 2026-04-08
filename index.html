@@ -134,9 +134,10 @@ Google
 <div class="login-badge">🛡️</div>
 <h1 class="login-title">פרופיל משתמש</h1>
 <p class="login-desc" style="margin-bottom:16px">בחר את הסטטוס שלך</p>
-<div id="profile-role-picker" style="display:flex;gap:10px;margin-bottom:16px">
-<button class="btn btn-secondary profile-role-btn" id="profile-role-active" onclick="selectProfileRole('active')" style="flex:1;padding:16px 10px;font-size:14px;font-weight:700">👮 שוטר פעיל</button>
-<button class="btn btn-secondary profile-role-btn" id="profile-role-trainee" onclick="selectProfileRole('trainee')" style="flex:1;padding:16px 10px;font-size:14px;font-weight:700">🎓 חניך בהכשרה</button>
+<div id="profile-role-picker" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+<button class="btn btn-secondary profile-role-btn" id="profile-role-citizen" onclick="selectProfileRole('citizen')" style="flex:1;padding:16px 10px;font-size:14px;font-weight:700;min-width:100px">👤 מועמד לגיוס</button>
+<button class="btn btn-secondary profile-role-btn" id="profile-role-active" onclick="selectProfileRole('active')" style="flex:1;padding:16px 10px;font-size:14px;font-weight:700;min-width:100px">👮 שוטר פעיל</button>
+<button class="btn btn-secondary profile-role-btn" id="profile-role-trainee" onclick="selectProfileRole('trainee')" style="flex:1;padding:16px 10px;font-size:14px;font-weight:700;min-width:100px">🎓 חניך בהכשרה</button>
 </div>
 <div id="profile-active-fields" class="hidden" style="display:none">
 <div class="login-form">
@@ -178,19 +179,13 @@ Google
 <option value="פלוגת דולב">פלוגת דולב</option>
 <option value="אחר">אחר</option>
 </select>
-<label style="font-size:13px;font-weight:600;color:var(--txts);text-align:right;margin-bottom:-4px">מחזור</label>
-<select id="profile-cohort" style="padding:13px 16px;border:1.5px solid var(--brd);border-radius:var(--r-md);background:var(--card2);color:var(--txt);font-size:14px;font-family:var(--font);outline:none;direction:rtl">
-<option value="">בחר מחזור</option>
-<option value="מחזור מרץ 2026">מחזור מרץ 2026</option>
-<option value="מחזור אוגוסט 2026">מחזור אוגוסט 2026</option>
-<option value="מחזור נובמבר 2026">מחזור נובמבר 2026</option>
-<option value="מחזור מרץ 2027">מחזור מרץ 2027</option>
-<option value="מחזור אוגוסט 2027">מחזור אוגוסט 2027</option>
-<option value="מחזור נובמבר 2027">מחזור נובמבר 2027</option>
-<option value="מחזור מרץ 2028">מחזור מרץ 2028</option>
-<option value="מחזור אוגוסט 2028">מחזור אוגוסט 2028</option>
-<option value="מחזור נובמבר 2028">מחזור נובמבר 2028</option>
-<option value="אחר">אחר</option>
+<label style="font-size:13px;font-weight:600;color:var(--txts);text-align:right;margin-bottom:-4px">מחלקה</label>
+<select id="profile-department" style="padding:13px 16px;border:1.5px solid var(--brd);border-radius:var(--r-md);background:var(--card2);color:var(--txt);font-size:14px;font-family:var(--font);outline:none;direction:rtl">
+<option value="">בחר מחלקה</option>
+<option value="1">מחלקה 1</option>
+<option value="2">מחלקה 2</option>
+<option value="3">מחלקה 3</option>
+<option value="4">מחלקה 4</option>
 </select>
 </div>
 </div>

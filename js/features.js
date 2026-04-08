@@ -1,112 +1,141 @@
 // js/features.js - Leaderboard, classification, analytics, flashcards
 // Auto-extracted from index.html
 
-// ===== LEADERBOARD + CLASSIFICATION =====
+// ===== LEADERBOARD (Lazy Load + Local Group) =====
+
+function getUserGroup(u){
+  // Returns a Firestore-queryable group key for a user's classification
+  const cls=u.classification;
+  if(!cls)return null;
+  if(cls.type==='trainee')return{type:'trainee',company:cls.company||'',department:cls.department||0};
+  if(cls.type==='officer')return{type:'officer',district:cls.district||''};
+  if(cls.type==='citizen')return{type:'citizen'};
+  return null;
+}
+
+function getGroupLabel(cls){
+  if(!cls)return '';
+  if(cls.type==='trainee')return[cls.company,cls.department?'מחלקה '+cls.department:''].filter(Boolean).join(' | ');
+  if(cls.type==='officer')return cls.district||'';
+  return 'אזרחים';
+}
 
 function showLB(){
   if(!user)return;
-  // If user not yet classified, show classification modal first
   if(!user.classification){
     showClassifyModal();
     return;
   }
-  renderLB();
   showScreen('lb-screen');
-}
-
-function renderLBFilters(){
-  const filters=document.getElementById('lb-filters');
-  const pills=[{id:'all',label:'הכל'},{id:'citizen',label:'👤 אזרחים'},{id:'officer',label:'👮 שוטרים'},{id:'trainee',label:'🎓 חניכים'}];
-  filters.innerHTML=pills.map(p=>`<div class="lb-filter-pill${p.id===lbFilter?' active':''}" onclick="setLBFilter('${p.id}')">${p.label}</div>`).join('');
-
-  const subFilters=document.getElementById('lb-sub-filters');
-  subFilters.innerHTML='';
-  if(lbFilter==='officer'){
-    const cfg=getLBConfig();
-    let html=`<select onchange="lbSubFilter=this.value;renderLBList()"><option value="">כל המחוזות</option>`;
-    cfg.districts.forEach(d=>{html+=`<option value="${d}"${lbSubFilter===d?' selected':''}>${d}</option>`});
-    html+=`</select>`;
-    subFilters.innerHTML=html;
-  }else if(lbFilter==='trainee'){
-    const cfg=getLBConfig();
-    let html=`<select onchange="lbSubFilter=this.value;renderLBList()"><option value="">כל הפלוגות</option>`;
-    cfg.traineeCompanies.forEach(c=>{html+=`<option value="${c}"${lbSubFilter===c?' selected':''}>${c}</option>`});
-    html+=`</select>`;
-    html+=`<select onchange="lbSubFilter2=this.value;renderLBList()"><option value="">כל המחזורים</option>`;
-    cfg.traineeCohorts.forEach(c=>{html+=`<option value="${c}"${lbSubFilter2===c?' selected':''}>${c}</option>`});
-    html+=`</select>`;
-    subFilters.innerHTML=html;
+  // If we have a cached leaderboard, render it immediately with updated user position
+  if(_lbGroupCache){
+    renderLBFromCache();
+    return;
   }
+  // First time opening LB this session: fetch from Firestore
+  loadGroupLeaderboard();
 }
 
-function setLBFilter(f){
-  lbFilter=f;lbSubFilter='';lbSubFilter2='';
-  renderLBFilters();renderLBList();
-}
-
-function renderLB(){
-  renderLBFilters();renderLBList();
-}
-
-function renderLBList(){
+function loadGroupLeaderboard(){
   const list=document.getElementById('lb-list');
+  const filters=document.getElementById('lb-filters');
+  const subFilters=document.getElementById('lb-sub-filters');
+  filters.innerHTML='';subFilters.innerHTML='';
   list.innerHTML='<div class="no-data-msg" style="opacity:.6">טוען טבלת דירוג...</div>';
-  // Merge local + Firestore users
-  fetchFirestoreLeaderboard().then(firestoreUsers=>{
-    const localUsers=Object.values(getUsers());
-    // Build map by name, prefer highest points
-    const merged={};
-    localUsers.forEach(u=>{merged[u.name]=u});
-    firestoreUsers.forEach(fu=>{
-      if(!fu.name)return;
-      if(!merged[fu.name]){merged[fu.name]=fu}
-      else{
-        // Keep higher points, union completed
-        if(fu.points>merged[fu.name].points)merged[fu.name].points=fu.points;
-        const fc=new Set([...(merged[fu.name].completed||[]),...(fu.completed||[])]);
-        merged[fu.name].completed=[...fc];
-        if(fu.classification&&!merged[fu.name].classification)merged[fu.name].classification=fu.classification;
-      }
-    });
-    let allUsers=Object.values(merged);
-    // Apply filters
-    if(lbFilter!=='all'){
-      allUsers=allUsers.filter(u=>u.classification&&u.classification.type===lbFilter);
-      if(lbFilter==='officer'&&lbSubFilter){
-        allUsers=allUsers.filter(u=>u.classification&&u.classification.district===lbSubFilter);
-      }
-      if(lbFilter==='trainee'){
-        if(lbSubFilter)allUsers=allUsers.filter(u=>u.classification&&u.classification.company===lbSubFilter);
-        if(lbSubFilter2)allUsers=allUsers.filter(u=>u.classification&&u.classification.cohort===lbSubFilter2);
-      }
-    }
-    const sorted=allUsers.sort((a,b)=>(b.points||0)-(a.points||0));
-    list.innerHTML='';
-    if(!sorted.length){list.innerHTML='<div class="no-data-msg">אין משתמשים בקטגוריה זו</div>';return}
-    const medals=['🥇','🥈','🥉'],rc=['gold','silver','bronze'];
-    sorted.forEach((u,i)=>{
-      const me=user&&u.name===user.name;
-      const cls=u.classification;
-      let tag='';
-      if(cls){
-        const t=USER_TYPES.find(x=>x.id===cls.type);
-        let detail=t?t.icon+' ':'';
-        if(cls.type==='officer'&&cls.district)detail+=cls.district;
-        else if(cls.type==='trainee'){detail+=[cls.company,cls.cohort].filter(Boolean).join(' | ')}
-        else if(t)detail+=t.label;
-        tag=`<div class="lb-classify-tag">${detail}</div>`;
-      }
-      const udone=(u.completed||[]).length;
-      const upct=PATH.length?Math.round(udone/PATH.length*100):0;
-      const ulv=getUserLevel(u.points||0);
-      const row=document.createElement('div');row.className='lb-row glass'+(me?' me':'')+(i<3?' top3':'');
-      row.innerHTML=`<div class="lb-rank ${i<3?rc[i]:''}">${i<3?medals[i]:i+1}</div>
-        <div class="lb-avatar">${u.name[0]}</div>
-        <div class="lb-info"><div class="lb-name">${u.name}${me?' ★':''}</div><div class="lb-level"><span class="lb-level-icon">${ulv.i}</span>${ulv.n}</div>${tag}</div>
-        <div class="lb-pts">${u.points||0}</div>`;
-      list.appendChild(row);
-    });
+
+  const group=getUserGroup(user);
+  if(!group||!db){
+    list.innerHTML='<div class="no-data-msg">לא ניתן לטעון דירוג</div>';
+    return;
+  }
+
+  // Build Firestore query based on group type
+  let query=db.collection('users');
+  if(group.type==='trainee'){
+    query=query.where('classification.type','==','trainee')
+               .where('classification.company','==',group.company)
+               .where('classification.department','==',group.department);
+  } else if(group.type==='officer'){
+    query=query.where('classification.type','==','officer')
+               .where('classification.district','==',group.district);
+  } else {
+    // citizen: all citizens
+    query=query.where('classification.type','==','citizen');
+  }
+
+  query.orderBy('points','desc').limit(30).get().then(snap=>{
+    const users=[];
+    snap.forEach(doc=>{const d=doc.data();d._docId=doc.id;users.push(d)});
+    _lbGroupCache=users;
+    renderLBFromCache();
+  }).catch(e=>{
+    console.warn('Leaderboard fetch error:',e);
+    list.innerHTML='<div class="no-data-msg">שגיאה בטעינת דירוג. ודא שיש חיבור לאינטרנט.</div>';
   });
+}
+
+function renderLBFromCache(){
+  const list=document.getElementById('lb-list');
+  const filters=document.getElementById('lb-filters');
+  const subFilters=document.getElementById('lb-sub-filters');
+
+  // Show group label as header
+  const group=getUserGroup(user);
+  const groupLabel=getGroupLabel(user.classification);
+  const typeIcon=user.classification.type==='trainee'?'🎓':user.classification.type==='officer'?'👮':'👤';
+  filters.innerHTML=`<div style="text-align:center;padding:8px 12px;font-size:14px;font-weight:600;color:var(--txt)">${typeIcon} ${groupLabel}</div>`;
+  subFilters.innerHTML=`<div style="text-align:center;font-size:12px;color:var(--txtm);margin-bottom:8px">טופ 30 בקבוצה שלך</div>`;
+
+  // Merge current user's live data into cached list
+  let entries=[...(_lbGroupCache||[])];
+  // Update or insert current user with live points
+  let foundSelf=false;
+  entries=entries.map(u=>{
+    if(u.uid===user.uid||u.name===user.name){
+      foundSelf=true;
+      return{...u,points:user.points||0,name:user.name,completed:user.completed||[]};
+    }
+    return u;
+  });
+  if(!foundSelf&&user.classification){
+    // User not in top 30 yet, add them
+    entries.push({name:user.name,uid:user.uid,points:user.points||0,completed:user.completed||[],classification:user.classification});
+  }
+
+  // Sort by points
+  entries.sort((a,b)=>(b.points||0)-(a.points||0));
+
+  list.innerHTML='';
+  if(!entries.length){list.innerHTML='<div class="no-data-msg">אין משתמשים בקבוצה זו</div>';return}
+
+  const medals=['🥇','🥈','🥉'],rc=['gold','silver','bronze'];
+  entries.forEach((u,i)=>{
+    const me=user&&(u.uid===user.uid||u.name===user.name);
+    const ulv=getUserLevel(u.points||0);
+    const row=document.createElement('div');row.className='lb-row glass'+(me?' me':'')+(i<3?' top3':'');
+    row.innerHTML=`<div class="lb-rank ${i<3?rc[i]:''}">${i<3?medals[i]:i+1}</div>
+      <div class="lb-avatar">${(u.name||'?')[0]}</div>
+      <div class="lb-info"><div class="lb-name">${u.name||'?'}${me?' ★':''}</div><div class="lb-level"><span class="lb-level-icon">${ulv.i}</span>${ulv.n}</div></div>
+      <div class="lb-pts">${u.points||0}</div>`;
+    list.appendChild(row);
+  });
+
+  // If user is beyond position 30, show separator and their position
+  const myIdx=entries.findIndex(u=>u.uid===user.uid||u.name===user.name);
+  if(myIdx>=30){
+    const sep=document.createElement('div');
+    sep.style.cssText='text-align:center;padding:8px;color:var(--txtm);font-size:12px';
+    sep.textContent='···';
+    list.appendChild(sep);
+    // Re-render user's row at bottom with actual rank
+    const ulv=getUserLevel(user.points||0);
+    const row=document.createElement('div');row.className='lb-row glass me';
+    row.innerHTML=`<div class="lb-rank">${myIdx+1}</div>
+      <div class="lb-avatar">${user.name[0]}</div>
+      <div class="lb-info"><div class="lb-name">${user.name} ★</div><div class="lb-level"><span class="lb-level-icon">${ulv.i}</span>${ulv.n}</div></div>
+      <div class="lb-pts">${user.points||0}</div>`;
+    list.appendChild(row);
+  }
 }
 
 // ===== CLASSIFICATION MODAL =====
@@ -121,6 +150,7 @@ function showClassifyModal(){
   </div>`).join('');
   document.getElementById('classify-step2').classList.add('hidden');
   document.getElementById('classify-save-btn').classList.add('hidden');
+  document.getElementById('classify-save-btn').onclick=saveClassification;
   document.getElementById('classify-modal').classList.remove('hidden');
   showScreen('lb-screen');
 }
@@ -150,8 +180,8 @@ function selectClassifyType(type){
     const cfg=getLBConfig();
     form.innerHTML=`<div class="classify-field"><label>פלוגה</label>
       <select id="cls-company"><option value="">בחר...</option>${cfg.traineeCompanies.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>
-      <div class="classify-field"><label>מחזור</label>
-      <select id="cls-cohort"><option value="">בחר...</option>${cfg.traineeCohorts.map(c=>`<option value="${c}">${c}</option>`).join('')}</select></div>`;
+      <div class="classify-field"><label>מחלקה</label>
+      <select id="cls-department"><option value="">בחר...</option>${cfg.traineeDepartments.map(d=>`<option value="${d}">מחלקה ${d}</option>`).join('')}</select></div>`;
     step2.classList.remove('hidden');
     saveBtn.classList.remove('hidden');
   }
@@ -168,16 +198,18 @@ function saveClassification(){
     if(unit)cls.unit=unit;
   }else if(classifyType==='trainee'){
     const company=document.getElementById('cls-company')?.value;
-    const cohort=document.getElementById('cls-cohort')?.value;
-    if(!company||!cohort){toast('בחר פלוגה ומחזור');return}
+    const department=document.getElementById('cls-department')?.value;
+    if(!company){toast('בחר פלוגה');return}
+    if(!department){toast('בחר מחלקה');return}
     cls.company=company;
-    cls.cohort=cohort;
+    cls.department=parseInt(department);
   }
   user.classification=cls;
   saveUser(user);
+  _lbGroupCache=null;
   closeClassify();
   toast('סיווג נשמר! ✓');
-  renderLB();
+  loadGroupLeaderboard();
 }
 
 function closeClassify(){
@@ -194,15 +226,12 @@ function showAdminLBConfig(){
     <div class="edit-field"><label>מחוזות/אגפים (כל ערך בשורה חדשה)</label>
     <textarea id="cfg-districts" rows="8" style="font-size:12px">${cfg.districts.join('\n')}</textarea></div>
     <div class="edit-field"><label>פלוגות חניכים</label>
-    <textarea id="cfg-companies" rows="4" style="font-size:12px">${cfg.traineeCompanies.join('\n')}</textarea></div>
-    <div class="edit-field"><label>מחזורים</label>
-    <textarea id="cfg-cohorts" rows="4" style="font-size:12px">${cfg.traineeCohorts.join('\n')}</textarea></div>`;
+    <textarea id="cfg-companies" rows="4" style="font-size:12px">${cfg.traineeCompanies.join('\n')}</textarea></div>`;
   saveBtn.style.display='';
   saveBtn.onclick=()=>{
     const d=document.getElementById('cfg-districts').value.split('\n').map(s=>s.trim()).filter(Boolean);
     const c=document.getElementById('cfg-companies').value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const co=document.getElementById('cfg-cohorts').value.split('\n').map(s=>s.trim()).filter(Boolean);
-    saveLBConfig({districts:d,traineeCompanies:c,traineeCohorts:co});
+    saveLBConfig({districts:d,traineeCompanies:c});
     closeAdminEdit();toast('✓ הגדרות דירוג עודכנו');
     saveBtn.onclick=()=>saveAdminEdit(); // restore
   };
@@ -440,7 +469,7 @@ function endFlashcardSession(){
     const timePts=Math.min(fcMins*5,40); // 5 pts/min, max 40
     const knewPts=Math.min(Math.floor(fcKnown*0.5),10); // 0.5 pts per "knew", max 10
     const fcTotal=fcMins>=1?timePts+knewPts:0; // minimum 1 minute for any points
-    if(fcTotal>0)user.points=(user.points||0)+fcTotal;
+    if(fcTotal>0){user.points=(user.points||0)+fcTotal;user.lastPointsDate=Date.now()}
     saveUser(user);
     if(fcTotal>0){
       toast(`כרטיסיות: ${fcKnown}/${fcKnown+fcUnknown} ידעת | +${fcTotal} נקודות (${fcMins} דק')`);

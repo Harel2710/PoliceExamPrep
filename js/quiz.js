@@ -150,9 +150,9 @@ function endQuiz(){
   }
   const mins=Math.floor(elapsed/60);
   const pct=Math.round(qCorrect/qList.length*100);
-  // Anti-farming: minimum 1 minute for any points
+  // Anti-farming: minimum 2 minutes for any points
   let compPts=0,timePts=0,boostBonus=0,accuracyPts=0;
-  if(mins>=1){
+  if(mins>=2){
     compPts=15;
     timePts=Math.min(mins*3,25);
     accuracyPts=Math.round(pct/100*15);
@@ -166,6 +166,7 @@ function endQuiz(){
   document.getElementById('r-time').textContent='+'+(timePts+accuracyPts);
   document.getElementById('r-total').textContent='+'+totalPts;
   user.points+=totalPts;
+  if(totalPts>0)user.lastPointsDate=Date.now();
   if(isBoostMode){
     user.boostCount=(user.boostCount||0)+1;
   }
@@ -208,8 +209,8 @@ function completeStep(step){
   } else {
     const mins=Math.floor((Date.now()-sessionStart)/60000);
     const pts=15,timePts=Math.min(mins*3,15);
-    if(mins<1){saveUser(user);toast('שלב הושלם!','ach');}
-    else{user.points+=pts+timePts;saveUser(user);toast('שלב הושלם! +'+(pts+timePts)+' נקודות','ach');}
+    if(mins<2){saveUser(user);toast('שלב הושלם!','ach');}
+    else{user.points+=pts+timePts;user.lastPointsDate=Date.now();saveUser(user);toast('שלב הושלם! +'+(pts+timePts)+' נקודות','ach');}
   }
   const _curCat=PATH[curStep]?.cat;
   let _nextIdx=-1;
@@ -444,7 +445,7 @@ function endSim(){
   const simTimePts=simMins>=2?Math.min(simMins*3,30):0;
   const simAccPts=simMins>=2?Math.round(pct/100*15):0;
   const simTotal=simPts+simTimePts+simAccPts;
-  if(user){user.points=(user.points||0)+simTotal}
+  if(user){user.points=(user.points||0)+simTotal;if(simTotal>0)user.lastPointsDate=Date.now()}
   // Save sim results
   const simKey=window._pathSimKey||('sim_'+simCat);
   const isFinal=simKey.startsWith('final_');

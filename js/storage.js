@@ -10,12 +10,12 @@ const newUser=n=>({name:n,points:0,completed:[],totalTime:0,lastActive:Date.now(
 
 // ===== FIRESTORE SYNC =====
 let _syncTimer=null;
-let _firestoreUsersCache=null;
-let _firestoreCacheTime=0;
-const FIRESTORE_CACHE_TTL=600000; // 10 minutes
 let _userCountCache=null;
 let _userCountCacheTime=0;
-const USER_COUNT_CACHE_TTL=600000; // 10 minutes
+const USER_COUNT_CACHE_TTL=1800000; // 30 minutes
+let _reportsCache=null;
+let _reportsCacheTime=0;
+const REPORTS_CACHE_TTL=600000; // 10 minutes
 
 function syncUserToFirestore(u){
   if(!db||!u)return;
@@ -36,34 +36,16 @@ function syncUserToFirestore(u){
       quizResults:u.quizResults||{},
       classification:u.classification||null,
       isAdmin:u.isAdmin||false,
-      profile:u.profile||null
+      profile:u.profile||null,
+      lastPointsDate:u.lastPointsDate||0
     };
     db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
-      // Note: do NOT invalidate _firestoreUsersCache here - let TTL handle it to reduce reads
     }).catch(e=>console.warn('Firestore sync error:',e));
   },10000);
 }
 
-function fetchFirestoreLeaderboard(){
-  return new Promise((resolve)=>{
-    if(!db){resolve([]);return}
-    // Use cache if fresh
-    if(_firestoreUsersCache&&(Date.now()-_firestoreCacheTime<FIRESTORE_CACHE_TTL)){
-      resolve(_firestoreUsersCache);return;
-    }
-    db.collection('users').orderBy('points','desc').limit(50).get().then(snap=>{
-      const users=[];
-      snap.forEach(doc=>users.push(doc.data()));
-      _firestoreUsersCache=users;
-      _firestoreCacheTime=Date.now();
-      resolve(users);
-    }).catch(e=>{
-      console.warn('Firestore leaderboard fetch error:',e);
-      resolve([]);
-    });
-  });
-}
+// fetchFirestoreLeaderboard removed — leaderboard now loads on-demand in features.js
 
 function mergeFirestoreUser(firestoreData,localUser){
   // Merge strategy: keep highest points, union completed, merge quizResults (newest wins)
@@ -87,6 +69,8 @@ function mergeFirestoreUser(firestoreData,localUser){
   if(firestoreData.classification&&!merged.classification)merged.classification=firestoreData.classification;
   if(firestoreData.isAdmin)merged.isAdmin=true;
   if(firestoreData.profile&&!merged.profile)merged.profile=firestoreData.profile;
+  // Keep most recent lastPointsDate
+  if((firestoreData.lastPointsDate||0)>(merged.lastPointsDate||0))merged.lastPointsDate=firestoreData.lastPointsDate;
   return merged;
 }
 
@@ -99,6 +83,7 @@ function saveReports(r){localStorage.setItem('pApp_reports',JSON.stringify(r))}
 function getOverrides(){return JSON.parse(localStorage.getItem('pApp_overrides')||'{}')}
 function saveOverrides(o){
   localStorage.setItem('pApp_overrides',JSON.stringify(o));
+  localStorage.setItem('pApp_overrides_ts',String(Date.now()));
   // Admin: sync overrides to Firestore for all users
   if(user&&user.isAdmin&&db){
     db.collection('appConfig').doc('overrides').set({data:JSON.stringify(o),updated:Date.now()},{merge:true})
@@ -108,9 +93,16 @@ function saveOverrides(o){
 }
 function loadGlobalOverrides(callback){
   if(!db){if(callback)callback();return}
+  // Cache overrides for 30 min - skip Firestore read if fresh
+  const _ovrTs=parseInt(localStorage.getItem('pApp_overrides_ts')||'0');
+  if(_ovrTs&&(Date.now()-_ovrTs<1800000)&&localStorage.getItem('pApp_overrides')){
+    console.log('Global overrides: using cached (fresh)');
+    if(callback)callback();return;
+  }
   db.collection('appConfig').doc('overrides').get().then(doc=>{
     if(doc.exists&&doc.data().data){
       localStorage.setItem('pApp_overrides',doc.data().data);
+      localStorage.setItem('pApp_overrides_ts',String(Date.now()));
       console.log('Global overrides loaded from Firestore');
     }
     if(callback)callback();

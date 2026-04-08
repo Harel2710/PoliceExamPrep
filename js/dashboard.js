@@ -133,12 +133,12 @@ function getTotalUserCount(){
       }).catch(()=>{});
     }
   }
-  // Live count: at least 1 (current user) + leaderboard cache
+  // Live count: at least 1 (current user) + group leaderboard cache if available
   let liveCount=user?1:0;
-  if(_firestoreUsersCache&&_firestoreUsersCache.length>0){
+  if(_lbGroupCache&&_lbGroupCache.length>0){
     const fiveMinAgo=Date.now()-5*60*1000;
     const selfUid=user?user.uid:'';
-    _firestoreUsersCache.forEach(u=>{
+    _lbGroupCache.forEach(u=>{
       if(u.lastActive&&u.lastActive>fiveMinAgo&&u.uid!==selfUid)liveCount++;
     });
   }

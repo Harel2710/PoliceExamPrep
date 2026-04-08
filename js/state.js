@@ -103,9 +103,9 @@ const USER_TYPES=[
   {id:'trainee',label:'חניך בהכשרה',icon:'🎓'}
 ];
 const DEFAULT_LB_CONFIG={
-  districts:['מחוז תל אביב','מחוז מרכז','מחוז ירושלים','מחוז צפון','מחוז חוף','מחוז דרום','מחוז ש"י','אגף חקירות ומודיעין','אגף משאבי אנוש','את"ל','אג"ת','אגף התנועה','משמר הגבול','מתפ"א','להב 433'],
+  districts:['מחוז תל אביב','מחוז מרכז','מחוז ירושלים','מחוז צפון','מחוז חוף','מחוז דרום','מחוז ש"י','אגף חקירות ומודיעין','אגף משאבי אנוש','את"ל','אג"ת','אגף התנועה','משמר הגבול','מתפ"א','להב 433','אחר'],
   traineeCompanies:['פלוגת הדר','פלוגת עוז','פלוגת יעל','פלוגת דוד','פלוגת דקל','פלוגת דרור','פלוגת דולב'],
-  traineeCohorts:['מחזור מרץ 2026','מחזור אוגוסט 2026','מחזור נובמבר 2026','מחזור מרץ 2027','מחזור אוגוסט 2027','מחזור נובמבר 2027','מחזור מרץ 2028','מחזור אוגוסט 2028','מחזור נובמבר 2028']
+  traineeDepartments:[1,2,3,4]
 };
 const getLBConfig=()=>{try{return{...DEFAULT_LB_CONFIG,...JSON.parse(localStorage.getItem('pApp_lbConfig')||'{}')}}catch{return DEFAULT_LB_CONFIG}};
 const saveLBConfig=c=>localStorage.setItem('pApp_lbConfig',JSON.stringify(c));
@@ -123,9 +123,9 @@ let simTimer=null,simRemaining=0,isSimMode=false,simCat='',simAnswers=[],simEndT
 // === Additional state (moved from other modules) ===
 let editingQuestion=null;
 let adminEditMode=null; // 'question','path_titles','intro_content'
-let lbFilter='all',lbSubFilter='',lbSubFilter2='';
+let _lbGroupCache=null; // cached leaderboard for user's local group
 let classifyType=null;
 let _timeTrackCounter=0;
 let activeTab='path';
-const THREE_MONTHS=90*24*60*60*1000;
+const INACTIVITY_LIMIT=30*24*60*60*1000; // 1 month
 let _profileRole=null;
