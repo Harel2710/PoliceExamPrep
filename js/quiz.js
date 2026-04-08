@@ -169,6 +169,8 @@ function endQuiz(){
   if(totalPts>0)user.lastPointsDate=Date.now();
   if(isBoostMode){
     user.boostCount=(user.boostCount||0)+1;
+    // Check boost medals
+    checkMedals({type:'boost',cat:boostCat,pct:pct,elapsed:elapsed});
   }
   if(!isBoostMode&&step){
     if(!user.completed)user.completed=[];
@@ -459,6 +461,10 @@ function endSim(){
       const step=PATH[curStep];
       if(step&&!user.completed.includes(step.id)){user.completed.push(step.id);saveUser(user)}
     }
+  }
+  // Check medals for final exams
+  if(isFinal){
+    checkMedals({type:'final',cat:simCat,pct:pct,mins:simMins,elapsed:elapsed});
   }
   // Build rich results HTML for ALL exams
   showRichSimResults(simCat,catBreakdown,correct,qList.length,pct,grade,simTotal,isLevel,isFinal);

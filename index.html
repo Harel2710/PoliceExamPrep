@@ -301,10 +301,19 @@ Google
 
 <!-- LEADERBOARD -->
 <div id="lb-screen" class="screen">
-<header class="screen-header"><h2 style="flex:1;text-align:center">🏆 טבלת דירוג</h2></header>
+<header class="screen-header"><h2 style="flex:1;text-align:center">🏆 הישגים ודירוג</h2></header>
+<div class="trophy-tabs">
+<div class="trophy-tab active" id="trophy-tab-medals" onclick="switchTrophyTab('medals')">🏅 הישגים אישיים</div>
+<div class="trophy-tab" id="trophy-tab-lb" onclick="switchTrophyTab('lb')">📊 דירוג</div>
+</div>
+<div id="trophy-medals-view">
+<div id="medals-container"></div>
+</div>
+<div id="trophy-lb-view" style="display:none">
 <div class="lb-filters" id="lb-filters"></div>
 <div class="lb-sub-filters" id="lb-sub-filters"></div>
 <div class="lb-container"><div id="lb-list" class="lb-list"></div></div>
+</div>
 </div>
 
 <!-- ANALYTICS -->

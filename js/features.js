@@ -1,5 +1,149 @@
-// js/features.js - Leaderboard, classification, analytics, flashcards
+// js/features.js - Leaderboard, classification, analytics, flashcards, medals
 // Auto-extracted from index.html
+
+// ===== TROPHY SCREEN (Medals + Leaderboard) =====
+
+let _trophyView='medals'; // 'medals' or 'lb'
+
+function showTrophyScreen(){
+  if(!user)return;
+  _trophyView='medals';
+  showScreen('lb-screen');
+  switchTrophyTab('medals');
+}
+
+function switchTrophyTab(view){
+  _trophyView=view;
+  document.getElementById('trophy-tab-medals').classList.toggle('active',view==='medals');
+  document.getElementById('trophy-tab-lb').classList.toggle('active',view==='lb');
+  document.getElementById('trophy-medals-view').style.display=view==='medals'?'':'none';
+  document.getElementById('trophy-lb-view').style.display=view==='lb'?'':'none';
+  if(view==='medals'){
+    renderMedals();
+  } else {
+    // Lazy load leaderboard only when tab is opened
+    if(!user.classification){showClassifyModal();return}
+    if(_lbGroupCache){renderLBFromCache()}
+    else{loadGroupLeaderboard()}
+  }
+}
+
+// ===== MEDALS =====
+
+function renderMedals(){
+  const container=document.getElementById('medals-container');
+  if(!user){container.innerHTML='';return}
+  const medals=user.medals||{};
+  const earned=Object.keys(medals).length;
+
+  let html=`<div class="medal-counter">🏅 <span>${earned}</span> / ${MEDALS.length} הישגים</div>`;
+
+  // Group medals by section
+  const sections=[
+    {title:'🎓 מבחן סיום — עברית',ids:['final_heb_bronze','final_heb_silver','final_heb_gold','final_heb_platinum','speed_heb']},
+    {title:'📐 מבחן סיום — דפ"ר',ids:['final_dpr_bronze','final_dpr_silver','final_dpr_gold','final_dpr_platinum','speed_dpr']},
+    {title:'⚡ מצוינות בתרגול',ids:['boost_perfect','boost_perfect_x5','boost_both','boost_speed']}
+  ];
+
+  sections.forEach(sec=>{
+    html+=`<div class="medal-section-title">${sec.title}</div>`;
+    html+=`<div class="medals-grid">`;
+    sec.ids.forEach(id=>{
+      const m=MEDALS.find(x=>x.id===id);
+      if(!m)return;
+      const unlocked=!!medals[id];
+      const dateStr=unlocked?new Date(medals[id]).toLocaleDateString('he-IL'):'';
+      html+=`<div class="medal-card glass ${unlocked?'unlocked':'locked'}">`;
+      html+=`<span class="medal-icon">${m.icon}</span>`;
+      html+=`<div class="medal-title">${m.title}</div>`;
+      html+=`<div class="medal-desc">${m.desc}</div>`;
+      if(unlocked){
+        html+=`<div class="medal-date">הושג ${dateStr}</div>`;
+      } else if(m.launch){
+        html+=`<div class="medal-launch" onclick="launchMedalTarget('${m.launch}')">שגר →</div>`;
+      } else {
+        html+=`<div class="medal-launch" onclick="launchMedalTarget('final_${m.cat}')">שגר →</div>`;
+      }
+      html+=`</div>`;
+    });
+    html+=`</div>`;
+  });
+
+  container.innerHTML=html;
+}
+
+function launchMedalTarget(target){
+  if(target==='boost'){
+    showScreen('boost-screen');
+  } else if(target==='final_hebrew'){
+    // Find the final_sim_heb step in PATH and launch it
+    const idx=PATH.findIndex(s=>s.id==='final_sim_heb');
+    if(idx>=0)openStep(idx);
+  } else if(target==='final_dpr'){
+    const idx=PATH.findIndex(s=>s.id==='final_sim_dpr');
+    if(idx>=0)openStep(idx);
+  }
+}
+
+function checkMedals(ctx){
+  if(!user)return;
+  if(!user.medals)user.medals={};
+  let newMedals=[];
+
+  if(ctx.type==='final'){
+    // Final exam accuracy medals
+    MEDALS.filter(m=>m.type==='final_acc'&&m.cat===ctx.cat).forEach(m=>{
+      if(!user.medals[m.id]&&ctx.pct>=m.minPct){
+        user.medals[m.id]=Date.now();
+        newMedals.push(m);
+      }
+    });
+    // Speed medals
+    MEDALS.filter(m=>m.type==='final_speed'&&m.cat===ctx.cat).forEach(m=>{
+      if(!user.medals[m.id]&&ctx.pct>=m.minPct&&ctx.mins<m.maxMin){
+        user.medals[m.id]=Date.now();
+        newMedals.push(m);
+      }
+    });
+  }
+
+  if(ctx.type==='boost'&&ctx.pct===100){
+    // Perfect boost
+    if(!user.perfectBoosts)user.perfectBoosts=0;
+    user.perfectBoosts++;
+    // Track per-cat perfect boosts
+    if(!user.perfectBoostCats)user.perfectBoostCats={};
+    user.perfectBoostCats[ctx.cat]=true;
+
+    // Single perfect boost medal
+    if(!user.medals['boost_perfect']){
+      user.medals['boost_perfect']=Date.now();
+      newMedals.push(MEDALS.find(m=>m.id==='boost_perfect'));
+    }
+    // x5 medal
+    if(!user.medals['boost_perfect_x5']&&user.perfectBoosts>=5){
+      user.medals['boost_perfect_x5']=Date.now();
+      newMedals.push(MEDALS.find(m=>m.id==='boost_perfect_x5'));
+    }
+    // Both cats medal
+    if(!user.medals['boost_both']&&user.perfectBoostCats['hebrew']&&user.perfectBoostCats['dpr']){
+      user.medals['boost_both']=Date.now();
+      newMedals.push(MEDALS.find(m=>m.id==='boost_both'));
+    }
+    // Speed boost medal (10/10 under 2 min)
+    if(!user.medals['boost_speed']&&ctx.elapsed<120){
+      user.medals['boost_speed']=Date.now();
+      newMedals.push(MEDALS.find(m=>m.id==='boost_speed'));
+    }
+  }
+
+  if(newMedals.length){
+    saveUser(user);
+    newMedals.forEach(m=>{
+      toast(`🏅 מדליה חדשה: ${m.icon} ${m.title}`,'ach');
+    });
+  }
+}
 
 // ===== LEADERBOARD (Lazy Load + Local Group) =====
 
@@ -27,13 +171,7 @@ function showLB(){
     return;
   }
   showScreen('lb-screen');
-  // If we have a cached leaderboard, render it immediately with updated user position
-  if(_lbGroupCache){
-    renderLBFromCache();
-    return;
-  }
-  // First time opening LB this session: fetch from Firestore
-  loadGroupLeaderboard();
+  switchTrophyTab('lb');
 }
 
 function loadGroupLeaderboard(){

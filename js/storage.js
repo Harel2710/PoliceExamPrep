@@ -37,7 +37,10 @@ function syncUserToFirestore(u){
       classification:u.classification||null,
       isAdmin:u.isAdmin||false,
       profile:u.profile||null,
-      lastPointsDate:u.lastPointsDate||0
+      lastPointsDate:u.lastPointsDate||0,
+      medals:u.medals||{},
+      perfectBoosts:u.perfectBoosts||0,
+      perfectBoostCats:u.perfectBoostCats||{}
     };
     db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
@@ -71,6 +74,18 @@ function mergeFirestoreUser(firestoreData,localUser){
   if(firestoreData.profile&&!merged.profile)merged.profile=firestoreData.profile;
   // Keep most recent lastPointsDate
   if((firestoreData.lastPointsDate||0)>(merged.lastPointsDate||0))merged.lastPointsDate=firestoreData.lastPointsDate;
+  // Merge medals: union (keep earliest date for each)
+  if(firestoreData.medals){
+    if(!merged.medals)merged.medals={};
+    for(const[k,v] of Object.entries(firestoreData.medals)){
+      if(!merged.medals[k]||v<merged.medals[k])merged.medals[k]=v;
+    }
+  }
+  if((firestoreData.perfectBoosts||0)>(merged.perfectBoosts||0))merged.perfectBoosts=firestoreData.perfectBoosts;
+  if(firestoreData.perfectBoostCats){
+    if(!merged.perfectBoostCats)merged.perfectBoostCats={};
+    Object.assign(merged.perfectBoostCats,firestoreData.perfectBoostCats);
+  }
   return merged;
 }
 

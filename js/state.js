@@ -112,6 +112,28 @@ const saveLBConfig=c=>localStorage.setItem('pApp_lbConfig',JSON.stringify(c));
 
 const LETTERS=['א','ב','ג','ד','ה','ו'];
 
+// ===== MEDALS =====
+const MEDALS=[
+  // Final exam accuracy — Hebrew
+  {id:'final_heb_bronze',icon:'🥉',title:'ארד עברית',desc:'מבחן סיום עברית 80%+',cat:'hebrew',type:'final_acc',minPct:80},
+  {id:'final_heb_silver',icon:'🥈',title:'כסף עברית',desc:'מבחן סיום עברית 90%+',cat:'hebrew',type:'final_acc',minPct:90},
+  {id:'final_heb_gold',icon:'🥇',title:'זהב עברית',desc:'מבחן סיום עברית 97%+',cat:'hebrew',type:'final_acc',minPct:97},
+  {id:'final_heb_platinum',icon:'💎',title:'פלטינום עברית',desc:'מבחן סיום עברית 100%',cat:'hebrew',type:'final_acc',minPct:100},
+  // Final exam accuracy — DPR
+  {id:'final_dpr_bronze',icon:'🥉',title:'ארד דפ"ר',desc:'מבחן סיום דפ"ר 80%+',cat:'dpr',type:'final_acc',minPct:80},
+  {id:'final_dpr_silver',icon:'🥈',title:'כסף דפ"ר',desc:'מבחן סיום דפ"ר 90%+',cat:'dpr',type:'final_acc',minPct:90},
+  {id:'final_dpr_gold',icon:'🥇',title:'זהב דפ"ר',desc:'מבחן סיום דפ"ר 97%+',cat:'dpr',type:'final_acc',minPct:97},
+  {id:'final_dpr_platinum',icon:'💎',title:'פלטינום דפ"ר',desc:'מבחן סיום דפ"ר 100%',cat:'dpr',type:'final_acc',minPct:100},
+  // Speed — accuracy + time
+  {id:'speed_heb',icon:'⚡',title:'מהיר כברק - עברית',desc:'מבחן סיום עברית 85%+ בפחות מ-12 דק\'',cat:'hebrew',type:'final_speed',minPct:85,maxMin:12},
+  {id:'speed_dpr',icon:'⚡',title:'מהיר כברק - דפ"ר',desc:'מבחן סיום דפ"ר 85%+ בפחות מ-15 דק\'',cat:'dpr',type:'final_speed',minPct:85,maxMin:15},
+  // Practice excellence — boosts
+  {id:'boost_perfect',icon:'🎯',title:'בוסט מושלם',desc:'10/10 בבוסט בודד',type:'boost',launch:'boost'},
+  {id:'boost_perfect_x5',icon:'🎯',title:'בוסט מושלם x5',desc:'5 סשנים שונים עם 10/10',type:'boost_count',count:5,launch:'boost'},
+  {id:'boost_both',icon:'🎯',title:'בוסט מושלם עברית+דפ"ר',desc:'10/10 גם בעברית וגם בדפ"ר',type:'boost_both',launch:'boost'},
+  {id:'boost_speed',icon:'⏱️',title:'בוסט בזק',desc:'10/10 בפחות מ-2 דק\'',type:'boost_speed',maxSec:120,launch:'boost'}
+];
+
 // ===== STATE =====
 let user=null,curStep=null,qList=[],qIdx=0,qCorrect=0,timerInt=null,elapsed=0;
 let sessionStart=Date.now(),timeTracker=null;

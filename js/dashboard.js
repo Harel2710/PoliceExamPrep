@@ -29,7 +29,7 @@ function switchTab(tab){
   switch(tab){
     case 'path':showDash();break;
     case 'boost':showScreen('boost-screen');break;
-    case 'leaderboard':showLB();break;
+    case 'leaderboard':showTrophyScreen();break;
     case 'analytics':showAnalytics();break;
     case 'more':showMore();break;
   }

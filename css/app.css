@@ -477,4 +477,26 @@ body{font-family:var(--font);color:var(--txt);direction:rtl;-webkit-font-smoothi
 .btn-google svg{width:20px;height:20px;flex-shrink:0}
 .phone-back-link{font-size:13px;color:var(--pl);cursor:pointer;text-align:center;margin-top:var(--sp-xs);padding:var(--sp-sm);font-weight:600}
 
+/* Trophy screen tabs */
+.trophy-tabs{display:flex;gap:0;margin:0 var(--sp-lg);border-radius:var(--r-md);overflow:hidden;border:1.5px solid var(--brd);background:var(--card2)}
+.trophy-tab{flex:1;padding:10px;text-align:center;font-size:14px;font-weight:700;cursor:pointer;transition:var(--tr);color:var(--txtm);background:transparent}
+.trophy-tab.active{background:var(--p);color:#fff}
+
+/* Medal cards */
+.medals-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-md);padding:var(--sp-lg)}
+.medal-card{position:relative;border-radius:var(--r-lg);padding:20px 14px 14px;text-align:center;transition:var(--tr);border:1.5px solid var(--brd);background:var(--card2);overflow:hidden}
+.medal-card.locked{opacity:.5;filter:grayscale(1)}
+.medal-card.unlocked{border-color:rgba(99,102,241,.5);box-shadow:0 0 20px rgba(99,102,241,.15)}
+.medal-card.unlocked .medal-icon{animation:medalPulse 2s ease infinite}
+@keyframes medalPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.medal-icon{font-size:36px;margin-bottom:8px;display:block}
+.medal-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px}
+.medal-desc{font-size:11px;color:var(--txtm);line-height:1.4;margin-bottom:8px;min-height:30px}
+.medal-date{font-size:10px;color:var(--pl);font-weight:600}
+.medal-launch{display:inline-block;font-size:11px;padding:5px 14px;background:rgba(99,102,241,.15);color:var(--pl);border:1px solid rgba(99,102,241,.3);border-radius:var(--r-sm);font-weight:600;cursor:pointer;transition:var(--tr)}
+.medal-launch:active{transform:scale(.95)}
+.medal-section-title{font-size:13px;font-weight:700;color:var(--txtm);padding:var(--sp-md) var(--sp-lg) var(--sp-xs);text-transform:uppercase;letter-spacing:.5px}
+.medal-counter{text-align:center;padding:var(--sp-lg) var(--sp-lg) var(--sp-sm);font-size:15px;font-weight:700;color:var(--txt)}
+.medal-counter span{color:var(--pl)}
+
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
