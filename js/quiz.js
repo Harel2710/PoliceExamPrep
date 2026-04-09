@@ -1,4 +1,5 @@
 // js/quiz.js - Quiz engine, data loading, boost, simulation, sim review
+let _isShapesQuiz=false;
 
 function getQuizData(key){
   let raw=null;
@@ -51,6 +52,18 @@ function getQuizData(key){
       return {...q,o:newO,a:q.a===-1?newO.length-1:q.a};
     });
   }
+  // Shuffle correct answer positions for shapes quizzes (avoid all-א pattern)
+  if(['shapes','shapes2','shapes3','shapes4'].includes(key)){
+    const pat=[0,2,1,3,2,0,3,1,1,3,0,2,3,1,2,0,0,2,3,1,2,1,0,3,1,0,3,2];
+    questions=questions.map((q,i)=>{
+      const t=pat[i%pat.length];
+      if(t!==q.a&&q.o&&q.o.length>Math.max(t,q.a)){
+        const newO=[...q.o];[newO[q.a],newO[t]]=[newO[t],newO[q.a]];
+        return {...q,o:newO,a:t};
+      }
+      return q;
+    });
+  }
   return applyOverrides(questions);
 }
 
@@ -81,10 +94,25 @@ function openQuiz(step){
   const data=getQuizData(step.dataKey);
   if(!data||!data.length){toast('אין שאלות זמינות עדיין');return}
   isBoostMode=false;isSimMode=false;
+  _isShapesQuiz=step.dataKey.startsWith('shapes');
   qList=data;qIdx=0;qCorrect=0;elapsed=0;
   clearAllTimers();
+  showScreen('quiz-screen');
+  if(_isShapesQuiz){
+    document.getElementById('q-counter').textContent=`${data.length} שאלות`;
+    document.getElementById('q-prog').style.width='0%';
+    document.getElementById('q-timer').textContent='';
+    document.getElementById('q-text').innerHTML='<div style="text-align:center;padding:24px 0"><div style="font-size:40px;margin-bottom:12px">📝</div><p style="font-size:15px;font-weight:600;line-height:1.7">בפרק זה ניתן להשתמש בעט ונייר טיוטה לביצוע רישומים נדרשים</p><button class="primary-btn" onclick="startShapesQuiz()" style="margin-top:20px">התחל תרגול ←</button></div>';
+    document.getElementById('opts-container').innerHTML='';
+    document.getElementById('fb-container').className='feedback-container hidden';
+  } else {
+    timerInt=setInterval(()=>{elapsed++;document.getElementById('q-timer').textContent='⏱️ '+fmtTime(elapsed)},1000);
+    renderQ();
+  }
+}
+function startShapesQuiz(){
   timerInt=setInterval(()=>{elapsed++;document.getElementById('q-timer').textContent='⏱️ '+fmtTime(elapsed)},1000);
-  showScreen('quiz-screen');renderQ();
+  renderQ();
 }
 
 function renderQ(){
@@ -97,7 +125,8 @@ function renderQ(){
     document.getElementById('q-text').textContent=q.q;
   }
   const _isDpr=isBoostMode?(boostCat==='dpr'):(PATH[curStep]?.cat==='dpr');
-  if(_isDpr){const _n=document.createElement('div');_n.className='dpr-note';_n.textContent='בפרק זה ניתן להשתמש בעט ובנייר טיוטה לביצוע רישומים נדרשים';document.getElementById('q-text').appendChild(_n)}
+  const _skipDprNote=_isShapesQuiz&&!isBoostMode&&!isSimMode;
+  if(_isDpr&&!_skipDprNote){const _n=document.createElement('div');_n.className='dpr-note';_n.textContent='בפרק זה ניתן להשתמש בעט ובנייר טיוטה לביצוע רישומים נדרשים';document.getElementById('q-text').appendChild(_n)}
   if(isBoostMode){
     document.getElementById('q-timer').innerHTML=`<span class="timer-badge${boostRemaining<=60?' warning':''}">⏱️ ${fmtTime(boostRemaining)}</span>`;
   }

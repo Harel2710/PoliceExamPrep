@@ -255,9 +255,9 @@ const QBANK_CATEGORIES=[
   {label:'עברית - אוצר מילים',keys:['wordMatch','opposites']},
   {label:'עברית - הבנת הנקרא',keys:['comprehension','comprehension2']},
   {label:'עברית - כתיב',keys:['spelling','spelling2']},
-  {label:'דפ"ר - מילוי הוראות',keys:['instr1','dictEx','dictPractice','compass','instrTest']},
-  {label:'דפ"ר - סדרות',keys:['seq3','seq4','seq5','seq6','seq7','seq8']},
-  {label:'דפ"ר - צורות',keys:['shapes','shapes2','shapes3','shapes4']}
+  {label:'דפ״ר - מילוי הוראות',keys:['instr1','dictEx','dictPractice','compass','instrTest']},
+  {label:'דפ״ר - סדרות',keys:['seq3','seq4','seq5','seq6','seq7','seq8']},
+  {label:'דפ״ר - צורות',keys:['shapes','shapes2','shapes3','shapes4']}
 ];
 
 let _qbankCurrentKey=null;

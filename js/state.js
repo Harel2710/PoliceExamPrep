@@ -25,13 +25,13 @@ const PATH=[
   {id:'comprehension2',type:'quiz',cat:'hebrew',title:'הבנת הנקרא 2',icon:'📰',desc:'שאלות הבנה נוספות',dataKey:'comprehension2'},
   {id:'spelling',type:'quiz',cat:'hebrew',title:'שגיאות כתיב',icon:'🔍',desc:'תרגול איתור שגיאות כתיב',dataKey:'spelling'},
   {id:'spelling2',type:'quiz',cat:'hebrew',title:'שגיאות כתיב 2',icon:'🔍',desc:'תרגול נוסף באיתור שגיאות',dataKey:'spelling2'},
-  {id:'final_sim_heb',type:'sim',cat:'hebrew',title:'מבחן סיום - עברית',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'hebrew',simKey:'final'},
+  {id:'final_sim_heb',type:'sim',cat:'hebrew',title:'מבחן סיום עברית',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'hebrew',simKey:'final'},
   // === מסלול דפ"ר ===
   {id:'level_sim_dpr',type:'sim',cat:'dpr',title:'מבחן רמה דפ"ר',icon:'📝',desc:'סימולציה למיפוי רמתך בדפ"ר',simCat:'dpr',simKey:'level'},
   {id:'instr_learn',type:'lesson',cat:'dpr',title:'הסבר מילוי הוראות',icon:'📋',desc:'5 סוגי שאלות, טיפים ודוגמאות'},
   {id:'instr_ex1',type:'quiz',cat:'dpr',title:'תרגול מילוי הוראות',icon:'✏️',desc:'שאלות מילוי הוראות',dataKey:'instr1'},
   {id:'dict_ex',type:'quiz',cat:'dpr',title:'תרגול הוראות ומילון',icon:'📖',desc:'שאלות סדר אלפביתי והוראות',dataKey:'dictEx'},
-  {id:'dict_practice',type:'quiz',cat:'dpr',title:'תרגול מילון - מי קודם?',icon:'🔤',desc:'33 שאלות סדר מילוני',dataKey:'dictPractice'},
+  {id:'dict_practice',type:'quiz',cat:'dpr',title:'תרגול מילון מי קודם?',icon:'🔤',desc:'33 שאלות סדר מילוני',dataKey:'dictPractice'},
   {id:'compass_ex',type:'quiz',cat:'dpr',title:'תרגול מצפן',icon:'🧭',desc:'8 שאלות כיוונים',dataKey:'compass'},
   {id:'instr_test',type:'quiz',cat:'dpr',title:'תרגול מילוי הוראות מקיף',icon:'📝',desc:'18 שאלות מגוונות',dataKey:'instrTest'},
   {id:'seq_learn',type:'lesson',cat:'dpr',title:'הסבר סדרות',icon:'📋',desc:'5 סוגי סדרות ודוגמאות'},
@@ -45,10 +45,10 @@ const PATH=[
   {id:'shapes_ex',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 1',icon:'🔷',desc:'שאלות על לוגיקה צורנית',dataKey:'shapes'},
   {id:'shapes_ex2',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 2',icon:'🔶',desc:'המשך שאלות דפוסים צורניים',dataKey:'shapes2'},
   {id:'shapes_ex3',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 3',icon:'🔷',desc:'שאלות מתקדמות בלוגיקה צורנית',dataKey:'shapes3'},
-  {id:'shapes_ex4',type:'quiz',cat:'dpr',title:'תרגול צורות 4',icon:'🔷',desc:'שאלות דפוסים מתקדמים',dataKey:'shapes4'},
-  {id:'final_sim_dpr',type:'sim',cat:'dpr',title:'מבחן סיום - דפ"ר',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'dpr',simKey:'final'},
+  {id:'shapes_ex4',type:'quiz',cat:'dpr',title:'תרגול צורות ודפוסים 4',icon:'🔷',desc:'שאלות דפוסים מתקדמים',dataKey:'shapes4'},
+  {id:'final_sim_dpr',type:'sim',cat:'dpr',title:'מבחן סיום דפ"ר',icon:'🏆',desc:'סימולציית סיום למדידת ההתקדמות',simCat:'dpr',simKey:'final'},
   // === סיכום ===
-  {id:'summary',type:'lesson',cat:'general',title:'סיכום',icon:'🎓',desc:'סיכום וטיפים אחרונים לקראת המבחן'},
+  {id:'summary',type:'lesson',cat:'general',title:'סיכום למידה',icon:'🎓',desc:'סיכום וטיפים אחרונים לקראת המבחן'},
 ];
 
 // ===== LEVELS (10) - engagement only =====
@@ -115,23 +115,23 @@ const LETTERS=['א','ב','ג','ד','ה','ו'];
 // ===== MEDALS =====
 const MEDALS=[
   // Final exam accuracy — Hebrew
-  {id:'final_heb_bronze',icon:'🥉',title:'ארד עברית',desc:'מבחן סיום עברית 80%+',cat:'hebrew',type:'final_acc',minPct:80},
-  {id:'final_heb_silver',icon:'🥈',title:'כסף עברית',desc:'מבחן סיום עברית 90%+',cat:'hebrew',type:'final_acc',minPct:90},
-  {id:'final_heb_gold',icon:'🥇',title:'זהב עברית',desc:'מבחן סיום עברית 97%+',cat:'hebrew',type:'final_acc',minPct:97},
-  {id:'final_heb_platinum',icon:'💎',title:'פלטינום עברית',desc:'מבחן סיום עברית 100%',cat:'hebrew',type:'final_acc',minPct:100},
+  {id:'final_heb_bronze',icon:'🥉',title:'ארד עברית',desc:'השג ציון 80% ומעלה במבחן סיום עברית',cat:'hebrew',type:'final_acc',minPct:80},
+  {id:'final_heb_silver',icon:'🥈',title:'כסף עברית',desc:'השג ציון 90% ומעלה במבחן סיום עברית',cat:'hebrew',type:'final_acc',minPct:90},
+  {id:'final_heb_gold',icon:'🥇',title:'זהב עברית',desc:'השג ציון 97% ומעלה במבחן סיום עברית',cat:'hebrew',type:'final_acc',minPct:97},
+  {id:'final_heb_platinum',icon:'💎',title:'פלטינום עברית',desc:'השג ציון מושלם 100% במבחן סיום עברית',cat:'hebrew',type:'final_acc',minPct:100},
   // Final exam accuracy — DPR
-  {id:'final_dpr_bronze',icon:'🥉',title:'ארד דפ"ר',desc:'מבחן סיום דפ"ר 80%+',cat:'dpr',type:'final_acc',minPct:80},
-  {id:'final_dpr_silver',icon:'🥈',title:'כסף דפ"ר',desc:'מבחן סיום דפ"ר 90%+',cat:'dpr',type:'final_acc',minPct:90},
-  {id:'final_dpr_gold',icon:'🥇',title:'זהב דפ"ר',desc:'מבחן סיום דפ"ר 97%+',cat:'dpr',type:'final_acc',minPct:97},
-  {id:'final_dpr_platinum',icon:'💎',title:'פלטינום דפ"ר',desc:'מבחן סיום דפ"ר 100%',cat:'dpr',type:'final_acc',minPct:100},
+  {id:'final_dpr_bronze',icon:'🥉',title:'ארד דפ"ר',desc:'השג ציון 80% ומעלה במבחן סיום דפ"ר',cat:'dpr',type:'final_acc',minPct:80},
+  {id:'final_dpr_silver',icon:'🥈',title:'כסף דפ"ר',desc:'השג ציון 90% ומעלה במבחן סיום דפ"ר',cat:'dpr',type:'final_acc',minPct:90},
+  {id:'final_dpr_gold',icon:'🥇',title:'זהב דפ"ר',desc:'השג ציון 97% ומעלה במבחן סיום דפ"ר',cat:'dpr',type:'final_acc',minPct:97},
+  {id:'final_dpr_platinum',icon:'💎',title:'פלטינום דפ"ר',desc:'השג ציון מושלם 100% במבחן סיום דפ"ר',cat:'dpr',type:'final_acc',minPct:100},
   // Speed — accuracy + time
-  {id:'speed_heb',icon:'⚡',title:'מהיר כברק - עברית',desc:'מבחן סיום עברית 85%+ בפחות מ-12 דק\'',cat:'hebrew',type:'final_speed',minPct:85,maxMin:12},
-  {id:'speed_dpr',icon:'⚡',title:'מהיר כברק - דפ"ר',desc:'מבחן סיום דפ"ר 85%+ בפחות מ-15 דק\'',cat:'dpr',type:'final_speed',minPct:85,maxMin:15},
+  {id:'speed_heb',icon:'⚡',title:'מהיר כברק - עברית',desc:'השג 85%+ במבחן סיום עברית תוך פחות מ-12 דקות',cat:'hebrew',type:'final_speed',minPct:85,maxMin:12},
+  {id:'speed_dpr',icon:'⚡',title:'מהיר כברק - דפ"ר',desc:'השג 85%+ במבחן סיום דפ"ר תוך פחות מ-15 דקות',cat:'dpr',type:'final_speed',minPct:85,maxMin:15},
   // Practice excellence — boosts
-  {id:'boost_perfect',icon:'🎯',title:'בוסט מושלם',desc:'10/10 בבוסט בודד',type:'boost',launch:'boost'},
-  {id:'boost_perfect_x5',icon:'🎯',title:'בוסט מושלם x5',desc:'5 סשנים שונים עם 10/10',type:'boost_count',count:5,launch:'boost'},
-  {id:'boost_both',icon:'🎯',title:'בוסט מושלם עברית+דפ"ר',desc:'10/10 גם בעברית וגם בדפ"ר',type:'boost_both',launch:'boost'},
-  {id:'boost_speed',icon:'⏱️',title:'בוסט בזק',desc:'10/10 בפחות מ-2 דק\'',type:'boost_speed',maxSec:120,launch:'boost'}
+  {id:'boost_perfect',icon:'🎯',title:'בוסט מושלם',desc:'ענה נכון על 10/10 שאלות בבוסט בודד',type:'boost',launch:'boost'},
+  {id:'boost_perfect_x5',icon:'🎯',title:'בוסט מושלם x5',desc:'השג 10/10 ב-5 בוסטים שונים',type:'boost_count',count:5,launch:'boost'},
+  {id:'boost_both',icon:'🎯',title:'בוסט מושלם עברית+דפ"ר',desc:'השג 10/10 בבוסט עברית וגם בבוסט דפ"ר',type:'boost_both',launch:'boost'},
+  {id:'boost_speed',icon:'⏱️',title:'בוסט בזק',desc:'השג 10/10 בבוסט תוך פחות מ-2 דקות',type:'boost_speed',maxSec:120,launch:'boost'}
 ];
 
 // ===== STATE =====
