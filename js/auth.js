@@ -108,6 +108,8 @@ function enterApp(uid,displayName,email){
           db.collection('appConfig').doc('stats').set({totalUsers:firebase.firestore.FieldValue.increment(1)},{merge:true}).catch(()=>{});
           _userCountCache=null;
         }
+        // Write presence immediately on login
+        db.collection('appConfig').doc('presence').set({[uid]:Date.now()},{merge:true}).catch(()=>{});
         finishEntry();
       }).catch(()=>finishEntry());
     } else {

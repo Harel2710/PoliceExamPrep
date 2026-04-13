@@ -1,4 +1,5 @@
 // js/dashboard.js - Dashboard, path, time tracking, navigation, readiness
+let _liveCountCache=null,_liveCountTime=0;
 // Auto-extracted from index.html
 
 // ===== TIME TRACKING =====
@@ -133,16 +134,25 @@ function getTotalUserCount(){
       }).catch(()=>{});
     }
   }
-  // Live count: at least 1 (current user) + group leaderboard cache if available
-  let liveCount=user?1:0;
-  if(_lbGroupCache&&_lbGroupCache.length>0){
-    const fiveMinAgo=Date.now()-5*60*1000;
-    const selfUid=user?user.uid:'';
-    _lbGroupCache.forEach(u=>{
-      if(u.lastActive&&u.lastActive>fiveMinAgo&&u.uid!==selfUid)liveCount++;
-    });
+  // Live count from presence doc (1 read, cached 2 min)
+  if(liveEl){
+    if(_liveCountCache!==null&&Date.now()-_liveCountTime<120000){
+      liveEl.textContent=_liveCountCache;
+    } else if(db){
+      liveEl.textContent=_liveCountCache||'1';
+      db.collection('appConfig').doc('presence').get().then(doc=>{
+        if(!doc.exists){if(liveEl)liveEl.textContent='1';return}
+        const data=doc.data();const tenMinAgo=Date.now()-10*60*1000;
+        let count=0;
+        Object.values(data).forEach(ts=>{if(typeof ts==='number'&&ts>tenMinAgo)count++});
+        count=Math.max(count,user?1:0);
+        _liveCountCache=count;_liveCountTime=Date.now();
+        if(liveEl)liveEl.textContent=count;
+      }).catch(()=>{if(liveEl)liveEl.textContent='1'});
+    } else {
+      liveEl.textContent=user?'1':'0';
+    }
   }
-  if(liveEl)liveEl.textContent=liveCount;
 }
 
 function showDash(){

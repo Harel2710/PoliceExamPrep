@@ -44,6 +44,8 @@ function syncUserToFirestore(u){
     };
     db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
+      // Update presence for live count
+      db.collection('appConfig').doc('presence').set({[docId]:Date.now()},{merge:true}).catch(()=>{});
     }).catch(e=>console.warn('Firestore sync error:',e));
   },10000);
 }
