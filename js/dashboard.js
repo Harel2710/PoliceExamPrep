@@ -6,6 +6,8 @@ let _liveCountCache=null,_liveCountTime=0;
 function startTimeTracking(){
   sessionStart=Date.now();
   _timeTrackCounter=0;
+  // Write presence immediately when session starts
+  if(db&&user){const uid=user.uid||user.name;if(uid)db.collection('appConfig').doc('presence').set({[uid]:Date.now()},{merge:true}).catch(()=>{})}
   if(timeTracker)clearInterval(timeTracker);
   timeTracker=setInterval(()=>{
     if(!user)return;
@@ -18,6 +20,8 @@ function startTimeTracking(){
     // Save locally every minute, sync to Firestore every 5 minutes
     const us=getUsers();const key=user.uid||user.name;us[key]=user;saveUsers(us);
     if(_timeTrackCounter>=5){_timeTrackCounter=0;syncUserToFirestore(user)}
+    // Refresh live count every 2 minutes
+    if(_timeTrackCounter%2===0){_liveCountCache=null;getTotalUserCount()}
   },60000);
 }
 

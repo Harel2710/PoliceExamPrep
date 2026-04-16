@@ -1,4 +1,4 @@
-const CACHE_NAME = 'police-app-v7';
+const CACHE_NAME = 'police-app-v8';
 
 const PRECACHE_URLS = [
   './',
