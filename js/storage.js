@@ -110,9 +110,9 @@ function saveOverrides(o){
 }
 function loadGlobalOverrides(callback){
   if(!db){if(callback)callback();return}
-  // Cache overrides for 30 min - skip Firestore read if fresh
+  // Cache overrides for 5 min - skip Firestore read if fresh
   const _ovrTs=parseInt(localStorage.getItem('pApp_overrides_ts')||'0');
-  if(_ovrTs&&(Date.now()-_ovrTs<1800000)&&localStorage.getItem('pApp_overrides')){
+  if(_ovrTs&&(Date.now()-_ovrTs<300000)&&localStorage.getItem('pApp_overrides')){
     console.log('Global overrides: using cached (fresh)');
     if(callback)callback();return;
   }

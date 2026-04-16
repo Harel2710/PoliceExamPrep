@@ -188,8 +188,23 @@ function loadGroupLeaderboard(){
   filters.innerHTML='';subFilters.innerHTML='';
   list.innerHTML='<div class="no-data-msg" style="opacity:.6">טוען טבלת דירוג...</div>';
 
+  if(!db){list.innerHTML='<div class="no-data-msg">לא ניתן לטעון דירוג</div>';return}
+
+  // Admin sees global top 50
+  if(user&&user.isAdmin){
+    db.collection('users').orderBy('points','desc').limit(50).get().then(snap=>{
+      const users=[];
+      snap.forEach(doc=>{const d=doc.data();d._docId=doc.id;users.push(d)});
+      _lbGroupCache=users;
+      renderLBFromCache();
+    }).catch(e=>{
+      list.innerHTML='<div class="no-data-msg">שגיאה בטעינת דירוג</div>';
+    });
+    return;
+  }
+
   const group=getUserGroup(user);
-  if(!group||!db){
+  if(!group){
     list.innerHTML='<div class="no-data-msg">לא ניתן לטעון דירוג</div>';
     return;
   }
@@ -215,15 +230,13 @@ function loadGroupLeaderboard(){
     renderLBFromCache();
   }).catch(e=>{
     console.warn('Leaderboard query error:',e);
-    // If composite index missing, Firestore error contains creation URL - log it
     if(e.message&&e.message.includes('index')){
       console.error('MISSING INDEX — create it here:',e.message);
     }
-    // Fallback: fetch all users, filter client-side (works without composite index)
+    // Fallback: fetch all users, filter client-side
     db.collection('users').orderBy('points','desc').limit(50).get().then(snap=>{
       const all=[];
       snap.forEach(doc=>{const d=doc.data();d._docId=doc.id;all.push(d)});
-      // Filter to user's group client-side
       const filtered=all.filter(u=>{
         if(!u.classification)return false;
         if(group.type==='trainee')return u.classification.type==='trainee'&&u.classification.company===group.company&&u.classification.department===group.department;

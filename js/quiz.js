@@ -91,6 +91,7 @@ function getSimQuestions(cat){
 
 // ===== REGULAR QUIZ =====
 function openQuiz(step){
+  loadGlobalOverrides(); // refresh overrides silently before each quiz
   const data=getQuizData(step.dataKey);
   if(!data||!data.length){toast('אין שאלות זמינות עדיין');return}
   isBoostMode=false;isSimMode=false;
@@ -256,6 +257,7 @@ function completeStep(step){
 function showBoost(){showScreen('boost-screen')}
 
 function startBoost(cat){
+  loadGlobalOverrides();
   boostCat=cat;
   const qs=getBoostQuestions(cat);
   if(!qs.length){toast('אין שאלות זמינות');return}
@@ -351,6 +353,7 @@ function launchSim(cat){
 }
 
 function startSim(cat){
+  loadGlobalOverrides();
   simCat=cat;
   showSimIntro(cat,null);
   document.getElementById('sim-intro-start').onclick=()=>launchSim(cat);

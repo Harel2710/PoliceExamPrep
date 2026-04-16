@@ -630,6 +630,7 @@ function markAllReportsHandled(docIds,btn){
   });
   batch.commit().then(()=>{
     toast(docIds.length+' דיווחים סומנו כטופלו');
+    _reportsCache=null;_reportsCacheTime=0;
     showAdminReports();
   }).catch(e=>{
     console.warn('Batch mark handled failed:',e);
@@ -643,6 +644,7 @@ function markReportHandled(docId,btn){
   btn.disabled=true;btn.textContent='מעדכן...';
   db.collection('reports').doc(docId).update({handled:true,handledAt:Date.now(),handledBy:user?user.name:'admin'}).then(()=>{
     toast('דיווח סומן כטופל');
+    _reportsCache=null;_reportsCacheTime=0;
     showAdminReports();
   }).catch(e=>{
     console.warn('Mark handled failed:',e);

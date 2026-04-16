@@ -63,8 +63,10 @@ function showMore(){
     const p=user.profile;
     if(p.role==='active'){
       pDisp.innerHTML=`<div>סטטוס: <strong>שוטר פעיל</strong></div><div>מחוז/אגף: <strong>${p.district||'--'}</strong></div>${p.unit?`<div>יחידה: <strong>${p.unit}</strong></div>`:''}`;
+    } else if(p.role==='trainee'){
+      pDisp.innerHTML=`<div>סטטוס: <strong>חניך בהכשרה</strong></div><div>פלוגה: <strong>${p.platoon||'--'}</strong></div><div>מחלקה: <strong>${p.department||'--'}</strong></div>`;
     } else {
-      pDisp.innerHTML=`<div>סטטוס: <strong>חניך בהכשרה</strong></div><div>פלוגה: <strong>${p.platoon||'--'}</strong></div><div>מחזור: <strong>${p.cohort||'--'}</strong></div>`;
+      pDisp.innerHTML=`<div>סטטוס: <strong>מועמד לגיוס</strong></div>`;
     }
   } else {
     pCard.style.display='';
@@ -87,9 +89,10 @@ function editProfile(){
     if(p.role==='active'){
       document.getElementById('profile-district').value=p.district||'';
       document.getElementById('profile-unit').value=p.unit||'';
-    } else {
+    } else if(p.role==='trainee'){
       document.getElementById('profile-platoon').value=p.platoon||'';
-      document.getElementById('profile-cohort').value=p.cohort||'';
+      const depEl=document.getElementById('profile-department');
+      if(depEl)depEl.value=p.department||'';
     }
   }
   showScreen('profile-screen');
