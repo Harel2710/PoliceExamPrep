@@ -40,7 +40,11 @@ function syncUserToFirestore(u){
       lastPointsDate:u.lastPointsDate||0,
       medals:u.medals||{},
       perfectBoosts:u.perfectBoosts||0,
-      perfectBoostCats:u.perfectBoostCats||{}
+      perfectBoostCats:u.perfectBoostCats||{},
+      activeDays:u.activeDays||[],
+      dailyQ:u.dailyQ||{},
+      bestStreak:u.bestStreak||0,
+      lvSeen:u.lvSeen||0
     };
     db.collection('users').doc(docId).set(doc,{merge:true}).then(()=>{
       console.log('Firestore synced:',u.name);
@@ -84,6 +88,11 @@ function mergeFirestoreUser(firestoreData,localUser){
     }
   }
   if((firestoreData.perfectBoosts||0)>(merged.perfectBoosts||0))merged.perfectBoosts=firestoreData.perfectBoosts;
+  // Streak data: union of active days, max per-day counts
+  if(firestoreData.activeDays){merged.activeDays=[...new Set([...(merged.activeDays||[]),...firestoreData.activeDays])].sort().slice(-90)}
+  if(firestoreData.dailyQ){merged.dailyQ={...(merged.dailyQ||{})};for(const[d,n] of Object.entries(firestoreData.dailyQ)){if((n||0)>(merged.dailyQ[d]||0))merged.dailyQ[d]=n}}
+  if((firestoreData.bestStreak||0)>(merged.bestStreak||0))merged.bestStreak=firestoreData.bestStreak;
+  if((firestoreData.lvSeen||0)>(merged.lvSeen||0))merged.lvSeen=firestoreData.lvSeen;
   if(firestoreData.perfectBoostCats){
     if(!merged.perfectBoostCats)merged.perfectBoostCats={};
     Object.assign(merged.perfectBoostCats,firestoreData.perfectBoostCats);

@@ -76,10 +76,10 @@ const ANALYTICS_GROUPS=[
     {name:'הבנת הנקרא',keys:['comprehension','comprehension2']},
     {name:'כתיב',keys:['spelling','spelling2']}
   ]},
-  {group:'דפ"ר',icon:'📐',color:'#2dd4bf',cats:[
+  {group:'דפ"ר',icon:'📐',color:'var(--dpr)',cats:[
     {name:'מילוי הוראות',keys:['instr1','dictEx','dictPractice','compass','instrTest']},
     {name:'סדרות',keys:['seq3','seq4','seq5','seq6','seq7','seq8']},
-    {name:'צורות ודפוסים',keys:['shapes','shapes2','shapes3']}
+    {name:'צורות ודפוסים',keys:['shapes','shapes2','shapes3','shapes4']}
   ]}
 ];
 const ANALYTICS_EXTRA=[

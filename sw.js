@@ -1,4 +1,4 @@
-const CACHE_NAME = 'police-app-v8';
+const CACHE_NAME = 'police-app-v9';
 
 const PRECACHE_URLS = [
   './',
@@ -7,6 +7,7 @@ const PRECACHE_URLS = [
   './js/state.js',
   './js/utils.js',
   './js/storage.js',
+  './js/engage.js',
   './js/lessons.js',
   './js/auth.js',
   './js/dashboard.js',

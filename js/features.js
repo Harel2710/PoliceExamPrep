@@ -450,7 +450,7 @@ function showAnalytics(){
 
   const overall=totalT>0?Math.round(totalC/totalT*100):0;
   const colorFor=p=>p>=70?'green':p>=40?'yellow':'red';
-  const numColor=p=>p===null?'var(--txtm)':p>=70?'var(--ok)':p>=40?'#fbbf24':'var(--err)';
+  const numColor=p=>p===null?'var(--txtm)':p>=70?'var(--ok)':p>=40?'var(--pop)':'var(--err)';
 
   // === Overview cards ===
   let html=`<div class="analytics-overview">`;
@@ -466,9 +466,9 @@ function showAnalytics(){
     html+=`<div class="analytics-group-card glass ${cls}">`;
     html+=`<div class="analytics-group-header"><div class="analytics-group-title"><span>${g.icon}</span><span>${g.group}</span></div>`;
     if(g.pct!==null){
-      html+=`<div class="analytics-group-score" style="color:${g.color};background:${gi===0?'rgba(59,130,246,.1)':'rgba(45,212,191,.1)'}">${g.pct}</div>`;
+      html+=`<div class="analytics-group-score" style="color:${g.color};background:color-mix(in srgb,${g.color} 12%,transparent)">${g.pct}</div>`;
     }else{
-      html+=`<div class="analytics-group-score" style="color:var(--txtm);background:rgba(255,255,255,.04)">-</div>`;
+      html+=`<div class="analytics-group-score" style="color:var(--txtm);background:var(--card2)">-</div>`;
     }
     html+=`</div>`;
     g.cats.forEach(cat=>{
@@ -506,7 +506,7 @@ function showAnalytics(){
   }
 
   // === Level vs Final comparison ===
-  const simPairs=[{cat:'hebrew',label:'עברית',color:'var(--p)'},{cat:'dpr',label:'דפ"ר',color:'#2dd4bf'}];
+  const simPairs=[{cat:'hebrew',label:'עברית',color:'var(--p)'},{cat:'dpr',label:'דפ"ר',color:'var(--dpr)'}];
   const hasAnySim=simPairs.some(p=>qr['level_'+p.cat]||qr['final_'+p.cat]);
   if(hasAnySim){
     html+=`<div class="analytics-extra-card glass"><div class="analytics-extra-title">📊 השוואת מבחני רמה וסיום</div>`;
@@ -515,7 +515,7 @@ function showAnalytics(){
       if(!lv&&!fn)return;
       const lvPct=lv?Math.round(lv.correct/lv.total*100):null;
       const fnPct=fn?Math.round(fn.correct/fn.total*100):null;
-      html+=`<div style="margin:10px 0;padding:10px;background:rgba(255,255,255,.03);border-radius:var(--r-md)">`;
+      html+=`<div style="margin:10px 0;padding:10px;background:var(--card2);border-radius:var(--r-md)">`;
       html+=`<div style="font-weight:700;margin-bottom:8px;color:${p.color}">${p.label}</div>`;
       html+=`<div style="display:flex;justify-content:space-around;text-align:center">`;
       html+=`<div><div style="font-size:11px;color:var(--txts)">מבחן רמה</div><div style="font-size:22px;font-weight:800">${lvPct!==null?lvPct+'%':'--'}</div></div>`;
@@ -634,6 +634,7 @@ function flipCard(){
 
 function markFlashcard(known){
   if(known)fcKnown++;else fcUnknown++;
+  if(known){sfx('ok');haptic(10)}
   fcIdx++;
   renderFlashcard();
 }
@@ -660,7 +661,7 @@ function endFlashcardSession(){
 
 function endFlashcards(){
   if(fcIdx>0 && fcIdx<fcCards.length){
-    if(confirm('לצאת? ההתקדמות תישמר.')){endFlashcardSession()}
+    confirmDialog('לסיים את הסבב?','מה שתרגלת עד עכשיו נשמר.','סיים','המשך',endFlashcardSession,false);
   }else{endFlashcardSession()}
 }
 

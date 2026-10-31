@@ -43,6 +43,9 @@ function switchTab(tab){
 function showMore(){
   if(!user)return;
   document.getElementById('u-name').textContent=user.name;
+  document.getElementById('me-avatar').textContent=(user.name||'?').trim()[0]||'?';
+  document.getElementById('s-best-streak').textContent=Math.max(user.bestStreak||0,getStreak(user));
+  renderSettings();
   const done=(user.completed||[]).length;
   const pct=Math.round(done/PATH.length*100);
   const lv=getUserLevel(user.points);
@@ -112,7 +115,8 @@ function getReadiness(){
 function updateReadiness(){
   const score=getReadiness();
   document.getElementById('readiness-val').textContent=score;
-  document.getElementById('readiness-fill').style.width=score+'%';
+  // readiness-fill is the badge outline (pathLength=100): reveal it proportionally
+  document.getElementById('readiness-fill').style.strokeDashoffset=100-score;
 }
 
 // ===== HOME (Path) =====
@@ -177,120 +181,163 @@ function showDash(){
   document.getElementById('dash-level-name').textContent=lv.n;
   document.getElementById('dash-level-num').textContent=lv.lv;
   document.getElementById('dash-level-prog').style.width=lvProg+'%';
-  document.getElementById('dash-level-next').textContent=nextLv?`${user.points||0}/${nextLv.min} לרמה הבאה`:'רמה מקסימלית!';
+  document.getElementById('dash-level-next').textContent=nextLv?`עוד ${nextLv.min-(user.points||0)} נקודות לרמת ${nextLv.n}`:'רמה מקסימלית!';
+  document.getElementById('dash-name').textContent=(user.name||'').split(' ')[0];
   getTotalUserCount();
   updateReadiness();
+  renderHeroEngage();
+  renderNextMission();
   renderPath();
   document.querySelectorAll('.tab-item').forEach(t=>t.classList.toggle('active',t.dataset.tab==='path'));
   activeTab='path';
   showScreen('dash-screen');
+  setTimeout(checkLevelUp,350);
 }
+
+// ===== STEP STATE (lock rules) =====
+// Hebrew and DPR progress independently; sims and summary gate on their tracks
+function stepState(i,comp){
+  const step=PATH[i];
+  const done=comp.includes(step.id);
+  let locked=false;
+  if(!done&&!user.isAdmin){
+    if(step.id==='intro'){
+      locked=false;
+    } else if(step.id==='level_sim_heb'||step.id==='level_sim_dpr'){
+      locked=!comp.includes('intro');
+    } else if(step.id==='final_sim_heb'){
+      locked=!PATH.filter(s=>s.cat==='hebrew'&&s.id!=='final_sim_heb').every(s=>comp.includes(s.id));
+    } else if(step.id==='final_sim_dpr'){
+      locked=!PATH.filter(s=>s.cat==='dpr'&&s.id!=='final_sim_dpr').every(s=>comp.includes(s.id));
+    } else if(step.id==='summary'){
+      locked=!comp.includes('final_sim_heb')||!comp.includes('final_sim_dpr');
+    } else if(step.cat==='hebrew'||step.cat==='dpr'){
+      let prevInCat=null;
+      for(let j=i-1;j>=0;j--){if(PATH[j].cat===step.cat){prevInCat=PATH[j];break}}
+      locked=prevInCat?!comp.includes(prevInCat.id):!comp.includes('intro');
+    }
+  }
+  return{done,locked,current:!done&&!locked};
+}
+
+const TRACK_META={hebrew:{n:'עברית',i:'📝'},dpr:{n:'דפ"ר',i:'📐'},general:{n:'כללי',i:'🏛️'}};
+const STEP_TYPE_LBL={lesson:'שיעור',quiz:'תרגול',sim:'מבחן'};
+let pathTrack=(()=>{try{return localStorage.getItem('pApp_track')||'all'}catch(e){return 'all'}})();
+function setPathTrack(t){
+  pathTrack=t;try{localStorage.setItem('pApp_track',t)}catch(e){}
+  renderNextMission();renderPath();
+}
+function trackProgress(cat,comp){
+  const steps=PATH.filter(s=>s.cat===cat);
+  return{done:steps.filter(s=>comp.includes(s.id)).length,total:steps.length};
+}
+
+// ===== NEXT MISSION (one tap to continue) =====
+function renderNextMission(){
+  const box=document.getElementById('next-mission');if(!box||!user)return;
+  const comp=user.completed||[];
+  const firstCurrent=cat=>{for(let i=0;i<PATH.length;i++){if(PATH[i].cat===cat&&stepState(i,comp).current)return i}return -1};
+  let rows=[];
+  if(!comp.includes('intro')){
+    rows=[PATH.findIndex(s=>s.id==='intro')];
+  } else {
+    const cats=pathTrack==='all'?['hebrew','dpr']:[pathTrack];
+    rows=cats.map(firstCurrent).filter(i=>i>=0);
+    if(!rows.length){const si=PATH.findIndex(s=>s.id==='summary');if(stepState(si,comp).current)rows=[si]}
+  }
+  if(!rows.length){
+    box.innerHTML=`<div class="mission-card mission-done"><span class="mission-ico">🎓</span><div class="mission-txt"><b>סיימת את כל המסלול!</b><small>שמור על כושר עם בוסטים וסימולציות</small></div><button class="btn btn-primary btn-sm" onclick="switchTab('boost')">לבוסט ⚡</button></div>`;
+    return;
+  }
+  box.innerHTML=`<div class="mission-head">המשימה הבאה</div>`+rows.map(i=>{
+    const s=PATH[i],tp=trackProgress(s.cat,comp);
+    const meta=s.cat==='general'?STEP_TYPE_LBL[s.type]:`${STEP_TYPE_LBL[s.type]} ב${TRACK_META[s.cat].n}, שלב ${tp.done+1} מתוך ${tp.total}`;
+    return `<button class="mission-card cat-${s.cat}" onclick="openStep(${i})">
+      <span class="mission-ico">${s.icon}</span>
+      <span class="mission-txt"><b>${s.title}</b><small>${meta}</small></span>
+      <span class="mission-go">${s.type==='sim'?'למבחן':'קדימה'}</span></button>`;
+  }).join('');
+}
+
+// Winding single-file path: node x-positions (% of width) and which side the label sits on
+const ZIG=[[50,'l'],[68,'l'],[76,'l'],[68,'l'],[50,'r'],[32,'r'],[24,'r'],[32,'r']];
+const NODE_ICONS={
+  'intro':'📋','vocab':'📖','heb_ex1':'✍️','heb_ex2':'📝','heb_ex3':'🔤',
+  'heb_ex4':'💬','heb_ex5':'📚','heb_ex6':'🧠','expr_learn':'💡','expr_ex1':'🎯',
+  'expr_ex2':'🎲','word_match':'🔗','opposites':'🔄','comprehension':'📰','comprehension2':'📰',
+  'spelling':'🔍','spelling2':'🔍','instr_learn':'📐','instr_ex1':'⚙️','dict_ex':'📓','dict_practice':'🔤',
+  'compass_ex':'🧭','instr_test':'📝','seq_learn':'🔢','seq_ex3':'🧮','seq_ex4':'📊',
+  'seq_ex5':'🎯','seq_ex6':'💡','seq_ex7':'⚡','seq_ex8':'🏅','shapes_learn':'🔷',
+  'shapes_ex':'🔶','shapes_ex2':'🔷','shapes_ex3':'🔶','shapes_ex4':'🔷',
+  'level_sim_heb':'🎯','level_sim_dpr':'🎯','final_sim_heb':'🏆','final_sim_dpr':'🏆',
+  'summary':'🎓'
+};
 
 function renderPath(){
   const list=document.getElementById('path-list');
   list.innerHTML='';list.className='path-map';
-  const NPR=3;let lastCat='',rowItems=[],rowIdx=0;
-  const allNodes=[],nodeStates=[];
-  const frag=document.createDocumentFragment();
+  document.querySelectorAll('.track-btn').forEach(b=>{const on=b.dataset.track===pathTrack;b.classList.toggle('active',on);b.setAttribute('aria-selected',on)});
 
   // Apply path title overrides
   const _ovr=getOverrides();
   PATH.forEach(s=>{const t=_ovr['path_title:'+s.id];if(t)s.title=t});
 
-  // Diverse icons per step for visual variety
-  const NODE_ICONS={
-    'intro':'📋','vocab':'📖','heb_ex1':'✍️','heb_ex2':'📝','heb_ex3':'🔤',
-    'heb_ex4':'💬','heb_ex5':'📚','heb_ex6':'🧠','expr_learn':'💡','expr_ex1':'🎯',
-    'expr_ex2':'🎲','word_match':'🔗','opposites':'🔄','comprehension':'📰','comprehension2':'📰',
-    'spelling':'🔍','spelling2':'🔍','instr_learn':'📐','instr_ex1':'⚙️','dict_ex':'📓','dict_practice':'🔤',
-    'compass_ex':'🧭','instr_test':'📝','seq_learn':'🔢','seq_ex3':'🧮','seq_ex4':'📊',
-    'seq_ex5':'🎯','seq_ex6':'💡','seq_ex7':'⚡','seq_ex8':'🏅','shapes_learn':'🔷',
-    'shapes_ex':'🔶','shapes_ex2':'🔷','shapes_ex3':'🔶','shapes_ex4':'🔷',
-    'level_sim_heb':'📝','level_sim_dpr':'📝','final_sim_heb':'🏆','final_sim_dpr':'🏆',
-    'summary':'🎓'
-  };
-
-  function flushRow(){
-    if(!rowItems.length)return;
-    const row=document.createElement('div');
-    row.className='path-row '+(rowIdx%2===0?'row-rtl':'row-ltr');
-    rowItems.forEach(n=>row.appendChild(n));
-    frag.appendChild(row);rowIdx++;rowItems=[];
-  }
-  function addBanner(cat){
-    flushRow();
-    const b=document.createElement('div');b.className='path-section-banner cat-'+cat;
-    const lbl=cat==='hebrew'?'📝 עברית':cat==='dpr'?'📐 דפ"ר':'🏛️ כללי';
-    b.innerHTML=`<span class="banner-icon">${lbl.split(' ')[0]}</span><span>${lbl.split(' ')[1]}</span>`;
-    frag.appendChild(b);rowIdx=0;
-  }
+  const comp=user.completed||[];
+  const frag=document.createDocumentFragment();
+  const sections=[];let sec=null,lastCat='',zi=0;
 
   PATH.forEach((step,i)=>{
-    if(step.cat!==lastCat){lastCat=step.cat;addBanner(step.cat)}
-    const done=(user.completed||[]).includes(step.id);
-    const comp=user.completed||[];
-    // Parallel sub-path logic: Hebrew and DPR progress independently
-    let locked=false;
-    if(!done&&!user.isAdmin){
-      if(step.id==='intro'){
-        locked=false;
-      } else if(step.id==='level_sim_heb'||step.id==='level_sim_dpr'){
-        locked=!comp.includes('intro');
-      } else if(step.id==='final_sim_heb'){
-        locked=!PATH.filter(s=>s.cat==='hebrew'&&s.id!=='final_sim_heb').every(s=>comp.includes(s.id));
-      } else if(step.id==='final_sim_dpr'){
-        locked=!PATH.filter(s=>s.cat==='dpr'&&s.id!=='final_sim_dpr').every(s=>comp.includes(s.id));
-      } else if(step.id==='summary'){
-        locked=!comp.includes('final_sim_heb')||!comp.includes('final_sim_dpr');
-      } else if(step.cat==='hebrew'||step.cat==='dpr'){
-        let prevInCat=null;
-        for(let j=i-1;j>=0;j--){if(PATH[j].cat===step.cat){prevInCat=PATH[j];break}}
-        locked=prevInCat?!comp.includes(prevInCat.id):!comp.includes('intro');
+    if(pathTrack!=='all'&&step.cat!=='general'&&step.cat!==pathTrack)return;
+    if(step.cat!==lastCat){
+      lastCat=step.cat;zi=0;
+      const b=document.createElement('div');b.className='path-section-banner cat-'+step.cat;
+      if(step.cat==='general'){
+        b.innerHTML=`<span class="banner-icon">${step.id==='intro'?'🚩':'🏁'}</span><span class="banner-name">${step.id==='intro'?'יוצאים לדרך':'קו הסיום'}</span>`;
+      } else {
+        const tp=trackProgress(step.cat,comp),m=TRACK_META[step.cat];
+        b.innerHTML=`<span class="banner-icon">${m.i}</span><span class="banner-name">מסלול ${m.n}</span><span class="banner-prog"><i style="width:${Math.round(tp.done/tp.total*100)}%"></i></span><span class="banner-count">${tp.done}/${tp.total}</span>`;
       }
+      frag.appendChild(b);
+      sec={el:document.createElement('div'),nodes:[],states:[]};sec.el.className='path-section';
+      frag.appendChild(sec.el);sections.push(sec);
     }
-    const current=!done&&!locked;
-    const nd=document.createElement('div');
-    nd.className='path-node'+(done?' completed':'')+(current?' current':'')+(locked?' locked':'');
-    const hue=step.cat==='hebrew'?'rgba(59,130,246,.12)':step.cat==='dpr'?'rgba(45,212,191,.12)':'rgba(245,158,11,.12)';
-    const bdr=step.cat==='hebrew'?'rgba(59,130,246,.3)':step.cat==='dpr'?'rgba(45,212,191,.3)':'rgba(245,158,11,.3)';
-    const circleStyle=done||locked?'':`style="background:${hue};border-color:${bdr}"`;
-    const nodeIcon=NODE_ICONS[step.id]||step.icon;
-    nd.innerHTML=`<div class="path-node-circle" ${circleStyle}>${done?'✅':nodeIcon}</div><div class="path-node-label">${step.title.replace(/ - .*/,'')}</div>`;
-    if(!locked)nd.onclick=()=>openStep(i);
-    allNodes.push(nd);nodeStates.push({done,current,locked});
-    rowItems.push(nd);
-    if(rowItems.length===NPR)flushRow();
+    const st=stepState(i,comp);
+    const [x,side]=ZIG[zi%ZIG.length];zi++;
+    const row=document.createElement('div');row.className='pn-row';row.style.setProperty('--x',x+'%');
+    const nd=document.createElement('button');
+    nd.className=`path-node cat-${step.cat} type-${step.type}`+(st.done?' completed':'')+(st.current?' current':'')+(st.locked?' locked':'');
+    nd.dataset.side=side;
+    nd.setAttribute('aria-label',step.title+(st.done?' (הושלם)':st.locked?' (נעול)':''));
+    if(st.locked)nd.disabled=true;
+    const label=step.title.replace(/ - .*/,'');
+    nd.innerHTML=`<span class="path-node-circle"><span>${st.done?'✓':st.locked?'🔒':(NODE_ICONS[step.id]||step.icon)}</span></span><span class="path-node-label">${label}<small>${STEP_TYPE_LBL[step.type]}</small></span>${st.current?'<span class="pn-start">התחל</span>':''}`;
+    if(!st.locked)nd.onclick=()=>openStep(i);
+    row.appendChild(nd);sec.el.appendChild(row);
+    sec.nodes.push(nd);sec.states.push(st);
   });
-  flushRow();
   list.appendChild(frag);
 
-  requestAnimationFrame(()=>{
-    drawPathLines(list,allNodes,nodeStates);
-    const cur=list.querySelector('.path-node.current');
-    if(cur)cur.scrollIntoView({behavior:'smooth',block:'center'});
-  });
+  // Hero stays in view; the "next mission" card is the shortcut to the current step
+  requestAnimationFrame(()=>drawPathLines(list,sections));
 }
 
-function drawPathLines(container,nodes,states){
+// Smooth S-curves between consecutive nodes of the same section
+function drawPathLines(container,sections){
   const old=container.querySelector('svg.path-connector');if(old)old.remove();
-  if(nodes.length<2)return;
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.classList.add('path-connector');
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');svg.classList.add('path-connector');svg.setAttribute('aria-hidden','true');
   const cRect=container.getBoundingClientRect();
-  const pts=nodes.map(el=>{
-    const c=el.querySelector('.path-node-circle');const r=c.getBoundingClientRect();
-    return{x:r.left+r.width/2-cRect.left,y:r.top+r.height/2-cRect.top+container.scrollTop};
+  svg.setAttribute('width',cRect.width);svg.setAttribute('height',container.scrollHeight);
+  sections.forEach(sec=>{
+    const pts=sec.nodes.map(el=>{const r=el.querySelector('.path-node-circle').getBoundingClientRect();return{x:r.left+r.width/2-cRect.left,y:r.top+r.height/2-cRect.top}});
+    for(let i=0;i<pts.length-1;i++){
+      const a=pts[i],b=pts[i+1],my=(a.y+b.y)/2;
+      const p=document.createElementNS(NS,'path');
+      p.setAttribute('d',`M${a.x} ${a.y} C${a.x} ${my} ${b.x} ${my} ${b.x} ${b.y}`);
+      p.setAttribute('class','seg cat-'+(sec.nodes[i].className.match(/cat-(\w+)/)||[])[1]+(sec.states[i].done&&!sec.states[i+1].locked?' seg-done':''));
+      svg.appendChild(p);
+    }
   });
-  const maxY=Math.max(...pts.map(p=>p.y))+50;
-  svg.setAttribute('viewBox',`0 0 ${cRect.width} ${maxY}`);
-  svg.style.height=maxY+'px';
-  for(let i=0;i<pts.length-1;i++){
-    const ln=document.createElementNS('http://www.w3.org/2000/svg','line');
-    ln.setAttribute('x1',pts[i].x);ln.setAttribute('y1',pts[i].y);
-    ln.setAttribute('x2',pts[i+1].x);ln.setAttribute('y2',pts[i+1].y);
-    if(states[i].done&&(states[i+1].done||states[i+1].current))ln.classList.add('seg-done');
-    svg.appendChild(ln);
-  }
   container.insertBefore(svg,container.firstChild);
 }
 

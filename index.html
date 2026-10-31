@@ -2,11 +2,15 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#111827">
+<meta name="theme-color" content="#0C1322">
+<script>
+// Apply saved color theme before first paint (avoids a flash of the default theme)
+(function(){var t='night';try{t=localStorage.getItem('pApp_theme')||'night'}catch(e){}if(['night','day','dusk'].indexOf(t)<0)t='night';document.documentElement.setAttribute('data-theme',t)})();
+</script>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -43,8 +47,8 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js')}
 <title>הכנה למבחני מיון - משטרת ישראל</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=Secular+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css?v9">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -66,7 +70,8 @@ let firebaseReady = false;
 let db = null;
 
 try {
-  if(FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+  // ?nofb runs the app fully offline (local UI testing without touching the live database)
+  if(FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY" && location.search.indexOf('nofb')===-1) {
     firebase.initializeApp(FIREBASE_CONFIG);
     firebaseReady = true;
     // Initialize Firestore with offline persistence
@@ -95,10 +100,14 @@ try {
 <div class="login-art-circle"></div>
 </div>
 <div class="login-container">
-<div class="login-badge">🛡️</div>
+<div class="login-badge"><svg viewBox="0 0 48 56" aria-hidden="true"><path d="M24 2 4 9v16c0 13 8.5 24 20 29 11.5-5 20-16 20-29V9L24 2Z" fill="var(--p)"/><path d="M24 7 9 12.5v12.7c0 10.2 6.4 18.9 15 23 8.6-4.1 15-12.8 15-23V12.5L24 7Z" fill="none" stroke="var(--on-p)" stroke-opacity=".35" stroke-width="1.5"/><path d="m16 28 6 6 11-12" fill="none" stroke="var(--pop)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
 <h1 class="login-title">הכנה למבחני מיון</h1>
 <h2 class="login-subtitle">משטרת ישראל</h2>
-<p class="login-desc">לומדה אינטראקטיבית לתרגול דפ"ר ועברית</p>
+<ul class="login-perks">
+<li><span>🗺️</span>מסלול למידה מדורג, צעד אחרי צעד</li>
+<li><span>🔥</span>רצף יומי ויעד שאלות שמחזיק אותך בכושר</li>
+<li><span>📝</span>סימולציות מבחן אמיתיות עם ציון משוער</li>
+</ul>
 <div id="auth-login-view">
 <div class="login-form">
 <input type="email" id="login-email" placeholder="אימייל" autocomplete="email" dir="ltr" style="text-align:right">
@@ -131,7 +140,7 @@ Google
 <div id="profile-screen" class="screen">
 <div class="login-container" style="max-width:420px">
 <button class="back-btn" id="profile-back-btn" onclick="showMore()" style="display:none;position:absolute;top:calc(var(--st) + 12px);right:16px;z-index:10">→ חזרה</button>
-<div class="login-badge">🛡️</div>
+<div class="login-badge login-badge-sm">👤</div>
 <h1 class="login-title">פרופיל משתמש</h1>
 <p class="login-desc" style="margin-bottom:16px">בחר את הסטטוס שלך</p>
 <div id="profile-role-picker" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
@@ -197,30 +206,41 @@ Google
 <!-- HOME (Path + Stats) -->
 <div id="dash-screen" class="screen">
 <header class="dash-title-bar">
-<div class="dash-title-text">הכנה למבחני מיון - דפ"ר ועברית</div>
-<div class="dash-user-count"><span class="ucount-item">👥 <span id="h-user-count">0</span> רשומים</span><span class="ucount-sep">|</span><span class="ucount-item ucount-live">🟢 <span id="h-live-count">0</span> מחוברים</span></div>
+<div class="dash-greet"><span class="dash-greet-hi">שלום,</span> <span id="dash-name"></span></div>
+<div class="dash-user-count"><span class="ucount-item"><span id="h-user-count">0</span> רשומים</span><span class="ucount-sep"></span><span class="ucount-item ucount-live"><i class="live-dot"></i><span id="h-live-count">0</span> מחוברים</span></div>
 </header>
-<div id="readiness-bar" class="readiness-bar">
-<div class="readiness-top">
-<div class="readiness-pct"><span id="readiness-val">0</span><span class="readiness-pct-sign">%</span></div>
-<div class="readiness-label">מוכנות למבחן</div>
+<section class="hero">
+<div class="badge-wrap" id="readiness-bar" aria-label="מוכנות למבחן">
+<svg class="badge-svg" viewBox="0 0 120 136" aria-hidden="true">
+<path class="badge-shape" d="M60 4 10 20v38c0 32 21 60 50 74 29-14 50-42 50-74V20L60 4Z"/>
+<path class="badge-track" d="M60 14 19 27v31c0 27 17.5 50.5 41 63 23.5-12.5 41-36 41-63V27L60 14Z" pathLength="100"/>
+<path class="badge-fill" id="readiness-fill" d="M60 14 19 27v31c0 27 17.5 50.5 41 63 23.5-12.5 41-36 41-63V27L60 14Z" pathLength="100"/>
+</svg>
+<div class="badge-center"><div class="badge-pct"><span id="readiness-val">0</span><small>%</small></div><div class="badge-lbl">מוכנות</div></div>
 </div>
-<div class="readiness-track"><div class="readiness-fill" id="readiness-fill"></div></div>
-</div>
+<div class="hero-side">
 <div class="level-badge-dash" id="dash-level-badge">
 <span class="level-badge-icon" id="dash-level-icon">🔰</span>
-<div class="level-badge-info">
-<div class="level-badge-name" id="dash-level-name">מתחיל</div><div class="level-badge-sub">רמה <span id="dash-level-num">1</span></div>
+<div class="level-badge-info"><div class="level-badge-name" id="dash-level-name">מתחיל</div><div class="level-badge-sub">רמה <span id="dash-level-num">1</span></div></div>
 </div>
-<div class="level-badge-prog-wrap">
 <div class="level-badge-prog"><div class="level-badge-prog-fill" id="dash-level-prog"></div></div>
 <div class="level-badge-next" id="dash-level-next"></div>
+<div class="hero-chips">
+<div class="chip chip-streak" id="h-streak-chip"><span class="chip-ico">🔥</span><b id="h-streak">0</b><span>ימי רצף</span></div>
+<div class="chip chip-goal" id="h-goal-chip"><svg class="goal-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" pathLength="100"/><circle class="goal-ring-fill" id="h-goal-ring" cx="18" cy="18" r="15" pathLength="100"/></svg><b id="h-goal">0/20</b><span>היום</span></div>
 </div>
 </div>
+</section>
 <div class="stats-panel">
-<div class="stats-panel-item"><span class="stats-panel-icon">⏱️</span><span class="stats-panel-val" id="h-time">0</span><span class="stats-panel-lbl">דקות תרגול</span></div>
-<div class="stats-panel-item"><span class="stats-panel-icon">⭐</span><span class="stats-panel-val" id="h-pts">0</span><span class="stats-panel-lbl">ניקוד</span></div>
-<div class="stats-panel-item"><span class="stats-panel-icon">⚡</span><span class="stats-panel-val" id="h-boost">0</span><span class="stats-panel-lbl">בוסטים</span></div>
+<div class="stats-panel-item"><span class="stats-panel-val" id="h-pts">0</span><span class="stats-panel-lbl">⭐ ניקוד</span></div>
+<div class="stats-panel-item"><span class="stats-panel-val" id="h-time">0</span><span class="stats-panel-lbl">⏱️ דקות תרגול</span></div>
+<div class="stats-panel-item"><span class="stats-panel-val" id="h-boost">0</span><span class="stats-panel-lbl">⚡ בוסטים</span></div>
+</div>
+<div id="next-mission"></div>
+<div class="track-switch" role="tablist" aria-label="סינון מסלול">
+<button class="track-btn" data-track="all" role="tab" onclick="setPathTrack('all')">הכל</button>
+<button class="track-btn" data-track="hebrew" role="tab" onclick="setPathTrack('hebrew')">עברית</button>
+<button class="track-btn" data-track="dpr" role="tab" onclick="setPathTrack('dpr')">דפ"ר</button>
 </div>
 <div class="path-map" id="path-list"></div>
 </div>
@@ -230,16 +250,25 @@ Google
 <header class="top-bar"><h2 style="margin:0;font-size:16px;font-weight:700">פרופיל</h2></header>
 <div class="dash-content">
 <div class="welcome-section">
-<h2>שלום, <span id="u-name"></span>!</h2>
-<div class="level-bar glass">
+<div class="me-avatar" id="me-avatar">?</div>
+<div class="me-info">
+<h2 id="u-name"></h2>
 <div class="level-info"><span id="rank-label"></span><span id="pts-next"></span></div>
 <div class="progress-bar"><div class="progress-fill" id="rank-prog"></div></div>
 </div>
 </div>
 <div class="stats-row">
-<div class="stat-card glass"><div class="stat-val" id="s-done">0</div><div class="stat-lbl">שיעורים</div></div>
-<div class="stat-card glass"><div class="stat-val" id="s-progress">0%</div><div class="stat-lbl">התקדמות</div></div>
+<div class="stat-card glass"><div class="stat-val" id="s-done">0</div><div class="stat-lbl">שלבים הושלמו</div></div>
+<div class="stat-card glass"><div class="stat-val" id="s-best-streak">0</div><div class="stat-lbl">שיא רצף (ימים)</div></div>
 <div class="stat-card glass"><div class="stat-val" id="s-time">0</div><div class="stat-lbl">דקות</div></div>
+</div>
+<span id="s-progress" hidden></span>
+<div class="settings-card glass">
+<div class="settings-title">מראה</div>
+<div class="theme-picker" id="theme-picker"></div>
+<div class="settings-row"><span>יעד שאלות יומי</span><div class="seg" id="goal-seg"></div></div>
+<div class="settings-row"><span>צלילים</span><button class="switch" id="sound-switch" role="switch" onclick="toggleSetting('sound')"><i></i></button></div>
+<div class="settings-row"><span>רטט בתשובה</span><button class="switch" id="haptic-switch" role="switch" onclick="toggleSetting('haptic')"><i></i></button></div>
 </div>
 <div id="profile-display" class="glass" style="padding:14px;margin-bottom:16px;font-size:13px;line-height:1.8;border-radius:var(--r-md)">
 <div style="font-weight:700;margin-bottom:4px">🛡️ פרטי שיוך</div>
@@ -267,15 +296,16 @@ Google
 <!-- QUIZ -->
 <div id="quiz-screen" class="screen">
 <header class="quiz-header">
-<div class="quiz-top"><button class="back-btn" id="quit-quiz-btn" style="padding:5px 10px;font-size:12px">✕ יציאה</button><span id="q-counter">שאלה 1/10</span><span id="q-timer">⏱️ 00:00</span></div>
-<div class="progress-bar"><div class="progress-fill blue" id="q-prog"></div></div>
+<div class="quiz-top"><button class="icon-btn" id="quit-quiz-btn" aria-label="יציאה מהתרגול">✕</button><div class="progress-bar quiz-prog"><div class="progress-fill" id="q-prog"></div></div><span class="combo-chip" id="q-combo" aria-live="polite"></span></div>
+<div class="quiz-meta"><span id="q-counter">שאלה 1/10</span><span id="q-timer">⏱️ 00:00</span></div>
 </header>
 <div class="quiz-body">
 <div class="question-card glass"><p id="q-text" class="question-text"></p></div>
 <div id="opts-container" class="options-container"></div>
-<div id="fb-container" class="feedback-container hidden">
-<p id="fb-text"></p><p id="fb-explanation"></p>
-<button id="next-btn" class="btn btn-primary btn-sm">הבא ←</button>
+<div id="fb-container" class="feedback-container hidden" aria-live="polite">
+<div class="fb-head"><span class="fb-ico" id="fb-ico"></span><p id="fb-text"></p><button class="fb-report" onclick="openReport()">🐛 דווח על טעות</button></div>
+<p id="fb-explanation"></p>
+<button id="next-btn" class="btn btn-primary">הבא ←</button>
 </div>
 </div>
 </div>
@@ -283,14 +313,17 @@ Google
 <!-- RESULTS -->
 <div id="results-screen" class="screen">
 <div class="results-container">
-<div id="r-emoji" class="results-emoji">🎯</div>
-<h2 class="results-title">סיום תרגול</h2>
-<div class="results-score" id="r-score">8/10</div>
-<p class="results-sub" id="r-sub">כל הכבוד!</p>
+<div class="score-ring" id="r-ring">
+<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" pathLength="100"/><circle class="score-ring-fill" cx="60" cy="60" r="52" pathLength="100"/></svg>
+<div class="score-ring-center"><div id="r-emoji" class="results-emoji">🎯</div><div class="results-score" id="r-score">0/0</div></div>
+</div>
+<div class="stars" id="r-stars" aria-hidden="true"><i>★</i><i>★</i><i>★</i></div>
+<h2 class="results-title" id="r-sub">כל הכבוד!</h2>
+<div class="results-facts" id="r-facts"></div>
 <div class="results-breakdown glass">
-<div class="bd-row"><span>השלמת שלב</span><span id="r-comp">+30</span></div>
-<div class="bd-row"><span>זמן פעילות</span><span id="r-time">+5</span></div>
-<div class="bd-total"><span>סה"כ</span><span id="r-total">+35</span></div>
+<div class="bd-row"><span>השלמת שלב</span><span id="r-comp">+0</span></div>
+<div class="bd-row"><span>זמן ודיוק</span><span id="r-time">+0</span></div>
+<div class="bd-total"><span>סה"כ נקודות</span><span id="r-total">+0</span></div>
 </div>
 <div class="results-actions">
 <button id="r-next" class="btn btn-primary">שלב הבא ←</button>
@@ -326,10 +359,10 @@ Google
 <div id="boost-screen" class="screen">
 <header class="screen-header"><h2 style="flex:1;text-align:center">⚡ תרגול מהיר</h2></header>
 <div class="selection-content">
-<div class="selection-card glass" id="boost-heb"><h3>בוסט עברית ⚡</h3><p>10 שאלות אקראיות | 5 דקות</p></div>
-<div class="selection-card glass" id="boost-dpr"><h3>בוסט דפ"ר ⚡</h3><p>10 שאלות אקראיות | 8 דקות</p></div>
-<div style="width:100%;border-top:1px solid var(--brd);margin:8px 0"></div>
-<div class="selection-card glass" onclick="startFlashcards()"><h3>🃏 כרטיסיות לימוד</h3><p>תרגול מילים וביטויים בכרטיסיות</p></div>
+<p class="selection-intro">10 שאלות אקראיות נגד השעון. שלב מהיר שמתאים לכל הפסקה.</p>
+<button class="selection-card glass sel-heb" id="boost-heb"><span class="sel-ico">📝</span><span class="sel-txt"><b>בוסט עברית</b><small>10 שאלות, 5 דקות</small></span><span class="sel-go">⚡</span></button>
+<button class="selection-card glass sel-dpr" id="boost-dpr"><span class="sel-ico">📐</span><span class="sel-txt"><b>בוסט דפ"ר</b><small>10 שאלות, 8 דקות</small></span><span class="sel-go">⚡</span></button>
+<button class="selection-card glass sel-fc" onclick="startFlashcards()"><span class="sel-ico">🃏</span><span class="sel-txt"><b>כרטיסיות לימוד</b><small>מילים וביטויים, בלי לחץ של זמן</small></span><span class="sel-go">←</span></button>
 </div>
 </div>
 
@@ -439,11 +472,11 @@ Google
 
 <!-- TAB BAR -->
 <nav id="tab-bar" class="tab-bar" style="display:none">
-<div class="tab-item active" data-tab="path" onclick="switchTab('path')"><span class="tab-icon">📚</span><span class="tab-label">מסלול הלמידה</span></div>
-<div class="tab-item" data-tab="boost" onclick="switchTab('boost')"><span class="tab-icon">⚡</span><span class="tab-label">תרגול מהיר</span></div>
-<div class="tab-item" data-tab="leaderboard" onclick="switchTab('leaderboard')"><span class="tab-icon">🏆</span><span class="tab-label">הישגים ודירוג</span></div>
-<div class="tab-item" data-tab="analytics" onclick="switchTab('analytics')"><span class="tab-icon">📊</span><span class="tab-label">ניתוח ביצועים</span></div>
-<div class="tab-item" data-tab="more" onclick="switchTab('more')"><span class="tab-icon">☰</span><span class="tab-label">עוד</span></div>
+<button class="tab-item active" data-tab="path" onclick="switchTab('path')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 20c0-4 12-3 12-8S6 8 6 4"/><circle cx="6" cy="4" r="2"/><circle cx="18" cy="20" r="2"/></svg><span class="tab-label">מסלול</span></button>
+<button class="tab-item" data-tab="boost" onclick="switchTab('boost')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg><span class="tab-label">תרגול מהיר</span></button>
+<button class="tab-item" data-tab="leaderboard" onclick="switchTab('leaderboard')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg><span class="tab-label">הישגים</span></button>
+<button class="tab-item" data-tab="analytics" onclick="switchTab('analytics')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span class="tab-label">ביצועים</span></button>
+<button class="tab-item" data-tab="more" onclick="switchTab('more')"><svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg><span class="tab-label">פרופיל</span></button>
 </nav>
 
 <!-- ADMIN EDIT FAB -->
@@ -491,8 +524,19 @@ Google
 </div>
 </div>
 
+<!-- LEVEL UP -->
+<div id="levelup-modal" class="modal-overlay hidden" onclick="event.target===this&&closeLevelUp()">
+<div class="modal-card levelup-card" role="dialog" aria-labelledby="lu-title">
+<div class="lu-icon" id="lu-icon">⭐</div>
+<div class="lu-kicker">עלית רמה</div>
+<h3 id="lu-title">מקצועי</h3>
+<p class="lu-sub" id="lu-sub">רמה 5</p>
+<button class="btn btn-primary" onclick="closeLevelUp()">יאללה, ממשיכים</button>
+</div>
+</div>
+
 <div id="confetti-box" class="confetti-container hidden"></div>
-<div id="toast-box" class="toast-container"></div>
+<div id="toast-box" class="toast-container" aria-live="polite"></div>
 
 
 <!-- Data files -->
@@ -500,17 +544,18 @@ Google
 <script src="dpr_data.js"></script>
 <script src="exam_data.js"></script>
 
-<!-- App modules (v8 cache bust) -->
-<script src="js/state.js?v8"></script>
-<script src="js/utils.js?v8"></script>
-<script src="js/storage.js?v8"></script>
-<script src="js/lessons.js?v8"></script>
-<script src="js/auth.js?v8"></script>
-<script src="js/dashboard.js?v8"></script>
-<script src="js/quiz.js?v8"></script>
-<script src="js/features.js?v8"></script>
-<script src="js/admin.js?v8"></script>
-<script src="js/init.js?v8"></script>
+<!-- App modules (v9 cache bust) -->
+<script src="js/state.js?v9"></script>
+<script src="js/utils.js?v9"></script>
+<script src="js/storage.js?v9"></script>
+<script src="js/engage.js?v9"></script>
+<script src="js/lessons.js?v9"></script>
+<script src="js/auth.js?v9"></script>
+<script src="js/dashboard.js?v9"></script>
+<script src="js/quiz.js?v9"></script>
+<script src="js/features.js?v9"></script>
+<script src="js/admin.js?v9"></script>
+<script src="js/init.js?v9"></script>
 
 </body>
 </html>

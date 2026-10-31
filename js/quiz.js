@@ -96,14 +96,14 @@ function openQuiz(step){
   if(!data||!data.length){toast('אין שאלות זמינות עדיין');return}
   isBoostMode=false;isSimMode=false;
   _isShapesQuiz=step.dataKey.startsWith('shapes');
-  qList=data;qIdx=0;qCorrect=0;elapsed=0;
+  qList=data;qIdx=0;qCorrect=0;elapsed=0;resetCombo();
   clearAllTimers();
   showScreen('quiz-screen');
   if(_isShapesQuiz){
     document.getElementById('q-counter').textContent=`${data.length} שאלות`;
     document.getElementById('q-prog').style.width='0%';
     document.getElementById('q-timer').textContent='';
-    document.getElementById('q-text').innerHTML='<div style="text-align:center;padding:24px 0"><div style="font-size:40px;margin-bottom:12px">📝</div><p style="font-size:15px;font-weight:600;line-height:1.7">בפרק זה ניתן להשתמש בעט ונייר טיוטה לביצוע רישומים נדרשים</p><button class="primary-btn" onclick="startShapesQuiz()" style="margin-top:20px">התחל תרגול ←</button></div>';
+    document.getElementById('q-text').innerHTML='<div style="text-align:center;padding:24px 0"><div style="font-size:40px;margin-bottom:12px">📝</div><p style="font-size:15px;font-weight:600;line-height:1.7">בפרק זה ניתן להשתמש בעט ונייר טיוטה לביצוע רישומים נדרשים</p><button class="btn btn-primary" onclick="startShapesQuiz()" style="margin-top:20px">התחל תרגול ←</button></div>';
     document.getElementById('opts-container').innerHTML='';
     document.getElementById('fb-container').className='feedback-container hidden';
   } else {
@@ -143,6 +143,7 @@ function renderQ(){
     c.appendChild(btn);
   });
   document.getElementById('fb-container').className='feedback-container hidden';
+  document.querySelector('#quiz-screen .quiz-body').classList.remove('has-fb');
 }
 
 function handleAns(btn,correct,expl,container){
@@ -153,20 +154,24 @@ function handleAns(btn,correct,expl,container){
   });
   if(correct){btn.classList.add('correct');qCorrect++}
   else btn.classList.add('wrong');
+  const line=onAnswer(correct,btn);
   const fb=document.getElementById('fb-container');
-  document.getElementById('fb-text').textContent=correct?'✓ נכון!':'✗ לא נכון';
+  document.getElementById('fb-ico').textContent=correct?'✓':'✗';
+  document.getElementById('fb-text').textContent=line;
+  document.querySelector('#quiz-screen .quiz-body').classList.add('has-fb');
   fb.className='feedback-container '+(correct?'correct-fb':'wrong-fb');
   document.getElementById('fb-explanation').textContent=expl||'';
   fb.classList.remove('hidden');
-  document.getElementById('next-btn').textContent=qIdx>=qList.length-1?'סיים ←':'הבא ←';
+  document.getElementById('next-btn').textContent=qIdx>=qList.length-1?'לתוצאות ←':'הבא ←';
+  document.getElementById('next-btn').focus({preventScroll:true});
 }
 
 function nextQ(){qIdx++;qIdx>=qList.length?endQuiz():renderQ()}
 
 function quitQuiz(){
-  if(confirm('בטוח שאתה רוצה לצאת? ההתקדמות בתרגול הזה לא תישמר.')){
+  confirmDialog('לצאת מהתרגול?','ההתקדמות בתרגול הזה לא תישמר.','צא','המשך לתרגל',()=>{
     clearAllTimers();isBoostMode?showDash():showPath();
-  }
+  });
 }
 
 function endQuiz(){
@@ -191,10 +196,14 @@ function endQuiz(){
   const totalPts=compPts+timePts+accuracyPts+boostBonus;
   document.getElementById('r-emoji').textContent=pct>=80?'🏆':pct>=50?'💪':'📖';
   document.getElementById('r-score').textContent=qCorrect+'/'+qList.length;
-  document.getElementById('r-sub').textContent=pct>=80?'מצוין!':pct>=50?'לא רע, המשך לתרגל!':'צריך עוד תרגול';
+  document.getElementById('r-sub').textContent=pct>=95?'מושלם! ביצוע של אלופים':pct>=80?'מצוין!':pct>=50?'לא רע, ממשיכים להתאמן':'צריך עוד תרגול, שווה לחזור על החומר';
   document.getElementById('r-comp').textContent='+'+compPts;
-  document.getElementById('r-time').textContent='+'+(timePts+accuracyPts);
-  document.getElementById('r-total').textContent='+'+totalPts;
+  document.getElementById('r-time').textContent='+'+(timePts+accuracyPts+boostBonus);
+  document.getElementById('r-facts').innerHTML=`<span><b>${pct}%</b>דיוק</span><span><b>${fmtTime(elapsed)}</b>זמן</span><span><b>${bestCombo}</b>רצף שיא</span>`+(mins<2?'<div class="pts-note">נקודות ניתנות מ-2 דקות תרגול ומעלה</div>':'');
+  setScoreRing('r-ring',pct);setStars('r-stars',starsFor(pct));
+  document.getElementById('r-total').textContent='+0';
+  setTimeout(()=>countUp(document.getElementById('r-total'),totalPts),250);
+  sfx('done');
   user.points+=totalPts;
   if(totalPts>0)user.lastPointsDate=Date.now();
   if(isBoostMode){
@@ -262,7 +271,7 @@ function startBoost(cat){
   const qs=getBoostQuestions(cat);
   if(!qs.length){toast('אין שאלות זמינות');return}
   isBoostMode=true;isSimMode=false;
-  qList=qs;qIdx=0;qCorrect=0;elapsed=0;
+  qList=qs;qIdx=0;qCorrect=0;elapsed=0;resetCombo();
   boostRemaining=cat==='dpr'?480:300; // dpr=8min, hebrew=5min
   clearAllTimers();
   timerInt=setInterval(()=>{
@@ -473,6 +482,8 @@ function endSim(){
   });
   const pct=Math.round(correct/qList.length*100);
   const grade=pctToGrade(pct);
+  recordAnswers(simAnswers.filter(a=>a!==-1).length);
+  sfx('done');if(pct>=75)confetti();
   // Award sim engagement points (time-weighted, min 2 minutes)
   const simMins=Math.floor(elapsed/60);
   const simPts=simMins>=2?20:0;
@@ -508,9 +519,8 @@ function showRichSimResults(cat,breakdown,correct,total,pct,grade,pts,isLevel,is
   const catName=cat==='hebrew'?'עברית':'דפ"ר';
   const typeLabel=isLevel?'מבחן רמה':isFinal?'מבחן סיום':'סימולציה';
   let html='<div class="results-container">';
-  html+=`<div class="results-emoji">${pct>=75?'🌟':pct>=50?'💪':'📚'}</div>`;
-  html+=`<h2 class="results-title">${typeLabel} ${catName} - תוצאות</h2>`;
-  html+=`<div class="results-score">${correct}/${total}</div>`;
+  html+=`<div class="results-kicker">${typeLabel} ${catName}</div>`;
+  html+=`<div class="score-ring" id="sim-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" pathLength="100"/><circle class="score-ring-fill" cx="60" cy="60" r="52" pathLength="100"/></svg><div class="score-ring-center"><div class="results-emoji">${pct>=75?'🌟':pct>=50?'💪':'📚'}</div><div class="results-score">${correct}/${total}</div></div></div>`;
   html+=`<div class="sim-grade">ציון משוער: ${grade}/8</div>`;
   html+=`<p class="results-sub">${pct>=75?'תוצאה מצוינת!':pct>=50?'יש מקום לשיפור':'צריך עוד תרגול'}</p>`;
 
@@ -550,7 +560,7 @@ function showRichSimResults(cat,breakdown,correct,total,pct,grade,pts,isLevel,is
   html+=`<div class="glass" style="padding:12px;margin:8px 0"><div style="font-weight:700;margin-bottom:8px">פירוט לפי נושא:</div>`;
   for(const[catN,data] of Object.entries(breakdown)){
     const cp=Math.round(data.correct/data.total*100);
-    html+=`<div class="sim-cat-row"><span>${catN}</span><span style="font-weight:700;color:${cp>=70?'var(--ok)':cp>=40?'#f9a825':'var(--err)'}">${data.correct}/${data.total} (${cp}%)</span></div>`;
+    html+=`<div class="sim-cat-row"><span>${catN}</span><span style="font-weight:700;color:${cp>=70?'var(--ok)':cp>=40?'var(--pop)':'var(--err)'}">${data.correct}/${data.total} (${cp}%)</span></div>`;
   }
   html+=`<div class="sim-cat-row" style="border-top:2px solid var(--p);margin-top:6px;padding-top:6px;font-weight:800"><span>זמן שימוש</span><span>${fmtTime(elapsed)}</span></div>`;
   html+=`<div class="sim-cat-row" style="font-weight:700;color:var(--pl)"><span>⭐ ניקוד שנצבר</span><span>+${pts}</span></div>`;
@@ -591,6 +601,7 @@ function showRichSimResults(cat,breakdown,correct,total,pct,grade,pts,isLevel,is
 
   document.getElementById('sim-results-screen').innerHTML=html;
   showScreen('sim-results-screen');
+  setScoreRing('sim-ring',pct);
 }
 
 function findQuestionCat(q){
@@ -648,7 +659,7 @@ function showSimReview(){
       }
     });
     if(userAns===-1) html+=`<div style="font-size:12px;color:var(--txtm);margin-top:4px">לא נענתה</div>`;
-    if(q.e) html+=`<div style="font-size:12px;color:var(--txtl);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.05)">💡 ${q.e}</div>`;
+    if(q.e) html+=`<div style="font-size:12px;color:var(--txtl);margin-top:6px;padding-top:6px;border-top:1px solid var(--brd)">💡 ${q.e}</div>`;
     html+=`</div>`;
   });
   list.innerHTML=html;
