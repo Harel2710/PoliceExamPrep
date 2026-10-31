@@ -221,8 +221,10 @@ input,textarea,select{user-select:text}
 .banner-prog i{display:block;height:100%;border-radius:inherit;background:var(--c,var(--p))}
 .banner-count{font-size:12px;font-weight:700;color:var(--txts);font-variant-numeric:tabular-nums}
 .path-section-banner.cat-dpr{--c:var(--dpr)}.path-section-banner.cat-general{--c:var(--pop);justify-content:center}
-.path-section{position:relative;z-index:1}
+/* sections sit above banners so the "start" bubble is never covered; first row leaves room for it */
+.path-section{position:relative;z-index:3}
 .pn-row{position:relative;height:88px}
+.path-section .pn-row:first-child{margin-top:30px}
 .path-node{--node:var(--p);position:absolute;top:50%;left:var(--x);transform:translate(-50%,-50%);display:block;width:60px;height:60px;-webkit-tap-highlight-color:transparent}
 .path-node.cat-dpr{--node:var(--dpr)}.path-node.cat-general{--node:var(--pop)}
 .path-node-circle{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--card);border:3px solid color-mix(in srgb,var(--node) 45%,var(--brd));box-shadow:0 4px 0 color-mix(in srgb,var(--node) 35%,var(--bg2));transition:transform var(--t-fast) var(--ease-out),box-shadow var(--t-fast) ease}
